@@ -53,7 +53,7 @@ button:hover,select:hover{background:#eee}
       <option value="study">Study Mode</option>
     </select>
     <button onclick="shuffleCards()">Shuffle</button>
-    <button onclick="resetScore()">Reset Score</button><button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button>
+    <button onclick="resetScore()">Reset Score</button><button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button><button onclick="goHome()">🏠 Main Page</button>
   </div>
 
   <div class="scorebar">
@@ -251,6 +251,8 @@ function speakQuestion(force=false){
 function speakAnswer(force=false){
   if(cards.length) speakText(cards[i].a,force);
 }
+
+function goHome(){window.location.href="https://jpaulsen-study.github.io/sait-study-hub/";}
 
 updateAudioUI();
 setup();
