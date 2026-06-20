@@ -138,9 +138,11 @@ function speakText(t,force=false){
 
  t = String(t)
    .replace(/\s*\?/g," ?")
-   .replace(/psia/gi," P S I A ")
-   .replace(/psig/gi," P S I G ")
+   .replace(/psia/gi," P S I A. Absolute pressure ")
+   .replace(/psig/gi," P S I G. Gauge pressure ")
    .replace(/psi/gi," P S I ")
+   .replace(/\babs\b/gi," absolute ")
+   .replace(/\bgauge\b/gi," gauge ")
    .replace(/\bwc\b/gi," water column ")
    .replace(/\bimp\b/gi," imperial ")
    .replace(/\bgal\b/gi," gallon ")
