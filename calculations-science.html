@@ -53,14 +53,14 @@ button:hover,select:hover{background:#eee}
       <option value="study">Study Mode</option>
     </select>
     <button onclick="shuffleCards()">Shuffle</button>
-    <button onclick="resetScore()">Reset Score</button>
+    <button onclick="resetScore()">Reset Score</button><button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button>
   </div>
 
   <div class="scorebar">
     <div class="pill">Card <span id="num">1</span> / <span id="total">0</span></div>
     <div class="pill">Correct: <span id="right">0</span></div>
     <div class="pill">Wrong: <span id="wrong">0</span></div>
-    <div class="pill">Score: <span id="score">0%</span></div>
+    <div class="pill">Score: <span id="score">0%</span></div><div class="pill">Audio: <span id="audioStatus">Off</span></div>
   </div>
 
   <div class="modebox">
@@ -168,6 +168,7 @@ function show(){
     choices.innerHTML = opts.map(x => `<button class="choice" onclick="pick(this, '${escapeJS(x)}')">${x}</button>`).join("");
   }
   updateScore();
+setTimeout(()=>speakQuestion(false),150);
 }
 
 function escapeJS(str){
@@ -190,12 +191,14 @@ function pick(btn, val){
     btn.classList.add("wrong");
   }
   formula.style.display = "block";
+  speakAnswer(false);
   updateScore();
+setTimeout(()=>speakQuestion(false),150);
 }
 
 function showFormula(){
   formula.style.display = "block";
-  if(mode.value === "study") studyAnswer.style.display = "block";
+  if(mode.value === "study"){ studyAnswer.style.display = "block"; speakAnswer(false);}
 }
 
 function nextCard(){ i++; show(); }
@@ -218,6 +221,46 @@ function toggleCategories(){
   btn.textContent = catList.classList.contains("hide") ? "Show" : "Minimize";
 }
 
+
+let audioOn = localStorage.getItem("calcSciAudioOn")==="1";
+
+function updateAudioUI(){
+  const a=document.getElementById("audioStatus");
+  const b=document.getElementById("audioBtn");
+  if(a) a.textContent=audioOn?"On":"Off";
+  if(b) b.textContent=audioOn?"🔊 Audio On":"🔇 Audio Off";
+}
+
+function toggleAudio(){
+  audioOn=!audioOn;
+  localStorage.setItem("calcSciAudioOn",audioOn?"1":"0");
+  if(!audioOn && "speechSynthesis" in window) speechSynthesis.cancel();
+  updateAudioUI();
+  if(audioOn) speakQuestion(true);
+}
+
+function speakText(t,force=false){
+  if(!force && !audioOn) return;
+  if(!("speechSynthesis" in window)) return;
+  t=String(t).replace(/\s*\?/g," ?");
+  speechSynthesis.cancel();
+  let u=new SpeechSynthesisUtterance(t);
+  u.rate=.92;
+  u.pitch=1;
+  let v=speechSynthesis.getVoices().find(x=>x.lang && x.lang.toLowerCase().startsWith("en"));
+  if(v) u.voice=v;
+  speechSynthesis.speak(u);
+}
+
+function speakQuestion(force=false){
+  if(cards.length) speakText(cards[i].q,force);
+}
+
+function speakAnswer(force=false){
+  if(cards.length) speakText(cards[i].a,force);
+}
+
+updateAudioUI();
 setup();
 </script>
 </body>
