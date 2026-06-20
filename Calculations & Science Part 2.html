@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cal and Science Part 2</title>
+<style>
+:root{--bg:#0b0b0b;--card:#1b1b1b;--text:#f5f5f5;--muted:#bdbdbd;--accent:#2f80ed;--good:#17a34a;--bad:#d93025;}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);}
+header{padding:22px;text-align:center;border-bottom:1px solid #333;background:#111} h1{margin:0 0 8px;font-size:28px} .sub{color:var(--muted);font-size:14px}
+.container{max-width:980px;margin:0 auto;padding:20px}.controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:18px}
+button,select{border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:bold;cursor:pointer}button{background:var(--accent);color:white}button.secondary{background:#333}button.good{background:var(--good)}button.bad{background:var(--bad)}select{background:#fff;color:#111}.stats{text-align:center;color:var(--muted);margin:10px 0 18px}
+.card-wrap{perspective:1200px}.card{min-height:300px;background:var(--card);border:2px solid #444;border-radius:18px;padding:30px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:30px;line-height:1.35;box-shadow:0 10px 25px rgba(0,0,0,.35);transition:transform .45s;transform-style:preserve-3d;position:relative}.card.flipped{transform:rotateY(180deg)}.side{position:absolute;inset:0;padding:30px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden}.back{transform:rotateY(180deg);color:#d7ecff}.label{position:absolute;top:14px;left:18px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}.category{position:absolute;bottom:14px;right:18px;font-size:14px;color:var(--muted)}
+.options{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}.option{background:#2a2a2a;color:#fff;text-align:left}.option.correct{background:var(--good)}.option.wrong{background:var(--bad)}.hidden{display:none}.footer{text-align:center;color:var(--muted);font-size:13px;margin-top:25px}.mode-note{text-align:center;color:#ddd;margin-bottom:12px}.score{font-weight:bold;color:white}
+@media(max-width:650px){.card{font-size:23px;min-height:260px}.controls{display:grid;grid-template-columns:1fr 1fr}.controls select{grid-column:1/3}}
+</style>
+</head>
+<body>
+<header><h1>Cal and Science Part 2 </h1><div class="sub">Study Mode + Quiz Mode</div></header>
+<div class="container">
+  <div class="controls">
+    <select id="mode"><option value="study">Study Mode</option><option value="quiz">Quiz Mode</option></select>
+    <select id="category"><option value="All">All Categories</option></select>
+    <button onclick="prevCard()" class="secondary">Previous</button>
+    <button onclick="nextCard()" class="secondary">Next</button>
+    <button onclick="shuffleCards()">Shuffle</button>
+    <button onclick="resetScore()" class="secondary">Reset Score</button>
+  </div>
+  <div class="mode-note" id="modeNote">Click the card to flip it.</div>
+  <div class="stats"><span id="counter"></span> | Score: <span class="score" id="score">0 / 0</span></div>
+  <div class="card-wrap">
+    <div class="card" id="card" onclick="flipCard()">
+      <div class="side front"><div class="label">Question</div><div id="question"></div><div class="category" id="cardCategory"></div></div>
+      <div class="side back"><div class="label">Answer</div><div id="answer"></div><div class="category" id="cardCategoryBack"></div></div>
+    </div>
+  </div>
+  <div class="options hidden" id="options"></div>
+  <div class="footer">Tip: In Study Mode, tap the card to flip. In Quiz Mode, choose the best answer.</div>
+</div>
+<script>
+const cards = [
+{c:'45° Offset Fittings',q:'What is the 45° offset constant?',a:'1.414'},
+{c:'45° Offset Fittings',q:'How do you find travel from run on a 45° offset?',a:'Travel = Run × 1.414'},
+{c:'45° Offset Fittings',q:'How do you find run from travel on a 45° offset?',a:'Run = Travel × 0.707'},
+{c:'45° Offset Fittings',q:'Why is 1.414 used for a 45° offset?',a:'It is √2 from a right isosceles triangle.'},
+{c:'45° Offset Fittings',q:'When solving wall deduction problems, when are deductions made?',a:'Before the final multiply.'},
+{c:'Adhesion & Cohesion',q:'What is adhesion?',a:'Attraction between different types of molecules.'},
+{c:'Adhesion & Cohesion',q:'Memory trick for adhesion?',a:'Different things stick together.'},
+{c:'Adhesion & Cohesion',q:'What is cohesion?',a:'Attraction between molecules of the same type.'},
+{c:'Adhesion & Cohesion',q:'Memory trick for cohesion?',a:'Same type stick together.'},
+{c:'Pressure',q:'What does psia stand for?',a:'Absolute pressure.'},
+{c:'Pressure',q:'Formula to convert psig to psia?',a:'psia = psig + 14.7 psi'},
+{c:'Pressure',q:'Formula to convert psia to psig?',a:'psig = psia − 14.7 psi'},
+{c:'Pressure',q:'What pressure includes atmospheric pressure?',a:'psia'},
+{c:'Pressure',q:'What pressure excludes atmospheric pressure?',a:'psig'},
+{c:'Electrochemistry',q:'What is an anode?',a:'Positive electrode that gives up electrons.'},
+{c:'Electrochemistry',q:'What occurs at the anode?',a:'Oxidation.'},
+{c:'Electrochemistry',q:'What is a cathode?',a:'Negative electrode that receives electrons.'},
+{c:'Electrochemistry',q:'What occurs at the cathode?',a:'Reduction.'},
+{c:'Water Density & Volumes',q:'How much does 1 ft³ of water weigh?',a:'62.4 lb'},
+{c:'Water Density & Volumes',q:'How many Imperial gallons are in 1 ft³?',a:'6.24 Imp gal'},
+{c:'Water Density & Volumes',q:'How many US gallons are in 1 ft³?',a:'7.5 US gal'},
+{c:'Water Density & Volumes',q:'How many litres are in 1 m³?',a:'1000 L'},
+{c:'Water Density & Volumes',q:'What is the mass of 1 m³ of water?',a:'1000 kg'},
+{c:'Water Density & Volumes',q:'What is the mass of 1 litre of water?',a:'1 kg'},
+{c:'Water Density & Volumes',q:'Relative density of water?',a:'1.0'},
+{c:'Water Density & Volumes',q:'Mercury is how many times heavier than water?',a:'13.6 times'},
+{c:'Water Column & Pressure Conversions',q:'1 inch WC equals how many psi?',a:'0.0361 psi'},
+{c:'Water Column & Pressure Conversions',q:'1 ft head of water equals how many psi?',a:'0.433 psi'},
+{c:'Water Column & Pressure Conversions',q:'1 psi equals how many feet of water?',a:'2.309 ft'},
+{c:'Water Column & Pressure Conversions',q:'1 m of water equals how many kPa?',a:'9.81 kPa'},
+{c:'Water Column & Pressure Conversions',q:'1 psi equals how many kPa?',a:'6.9 kPa'},
+{c:'Fractions & Decimals',q:'How do you convert a fraction to a decimal?',a:'Numerator ÷ Denominator'},
+{c:'Fractions & Decimals',q:'What does the fraction bar mean?',a:'Division.'},
+{c:'Fractions & Decimals',q:'How do you convert a decimal to a fraction?',a:'Decimal × denominator, then round and reduce.'},
+{c:'Fractions & Decimals',q:'What should always be done after finding a fraction?',a:'Reduce to lowest terms.'},
+{c:'Fractions & Decimals',q:'What happens if the remainder is less than 0.5?',a:'Round down.'},
+{c:'Fractions & Decimals',q:'What happens if the remainder is 0.5 or greater?',a:'Round up.'},
+{c:'Percentages',q:'How do you convert a fraction to a percentage?',a:'Fraction → Decimal × 100'},
+{c:'Percentages',q:'How do you find a percentage of a number?',a:'Convert % to decimal and multiply.'},
+{c:'Percentages',q:'What remains after a 52% reduction?',a:'48%'},
+{c:'Percentages',q:'How do you find an original value before a percentage increase?',a:'New Value × 100 ÷ (100 + Increase%)'},
+{c:'Ohm\'s Law',q:'What is Ohm\'s Law?',a:'V = A × Ω or E = I × R'},
+{c:'Ohm\'s Law',q:'Formula for amperage?',a:'A = V ÷ Ω'},
+{c:'Ohm\'s Law',q:'Formula for resistance?',a:'Ω = V ÷ A'},
+{c:'Ohm\'s Law',q:'What does V stand for?',a:'Voltage.'},
+{c:'Ohm\'s Law',q:'What does A stand for?',a:'Amperage.'},
+{c:'Ohm\'s Law',q:'What does Ω stand for?',a:'Resistance.'},
+{c:'Series Circuits',q:'Formula for total resistance in series?',a:'Rt = R1 + R2 + R3 + ...'},
+{c:'Series Circuits',q:'What stays the same in a series circuit?',a:'Current / amperage.'},
+{c:'Series Circuits',q:'What happens when resistors are added in series?',a:'Total resistance increases.'},
+{c:'Series Circuits',q:'What happens if one component opens in a series circuit?',a:'The whole circuit stops.'},
+{c:'Parallel Circuits',q:'Formula for total resistance in parallel?',a:'Rt = 1 / (1/R1 + 1/R2 + 1/R3 + ...)'},
+{c:'Parallel Circuits',q:'What happens when resistors are added in parallel?',a:'Total resistance decreases.'},
+{c:'Parallel Circuits',q:'Total resistance in parallel is always lower than what?',a:'The lowest individual resistor.'},
+{c:'Parallel Circuits',q:'If one branch fails in a parallel circuit, what happens?',a:'The other branches continue operating.'},
+{c:'Volume Calculations',q:'Formula for cylinder volume?',a:'V = πr²h'},
+{c:'Volume Calculations',q:'When calculating cylinder volume, use radius or diameter?',a:'Radius.'},
+{c:'Volume Calculations',q:'Formula for sphere volume?',a:'V = (4/3)πr³'},
+{c:'Volume Calculations',q:'Two hemispheres equal what shape?',a:'One sphere.'},
+{c:'Volume Calculations',q:'Formula for total volume of a vessel with two hemispherical ends?',a:'Vtotal = Vcylinder + Vsphere'},
+{c:'Volume Calculations',q:'For a vessel with two rounded ends, how do you find cylinder height?',a:'h = Overall Length − Diameter'}
+];
+let deck=[...cards], index=0, correct=0, attempts=0, answered=false;
+const cardEl=document.getElementById('card'), qEl=document.getElementById('question'), aEl=document.getElementById('answer'), counterEl=document.getElementById('counter'), scoreEl=document.getElementById('score'), optEl=document.getElementById('options'), modeEl=document.getElementById('mode'), catEl=document.getElementById('category');
+function setupCategories(){[...new Set(cards.map(x=>x.c))].forEach(c=>{let o=document.createElement('option');o.value=c;o.textContent=c;catEl.appendChild(o);});}
+function filtered(){const cat=catEl.value;return cat==='All'?[...cards]:cards.filter(x=>x.c===cat)}
+function render(){deck=filtered(); if(index>=deck.length) index=0; const item=deck[index]; cardEl.classList.remove('flipped'); qEl.textContent=item.q; aEl.textContent=item.a; document.getElementById('cardCategory').textContent=item.c; document.getElementById('cardCategoryBack').textContent=item.c; counterEl.textContent=`Card ${index+1} of ${deck.length}`; scoreEl.textContent=`${correct} / ${attempts}`; answered=false; renderMode();}
+function renderMode(){if(modeEl.value==='study'){optEl.classList.add('hidden');document.getElementById('modeNote').textContent='Click the card to flip it.';}else{optEl.classList.remove('hidden');document.getElementById('modeNote').textContent='Choose the correct answer.';makeOptions();}}
+function makeOptions(){optEl.innerHTML=''; const item=deck[index]; let wrongs=cards.filter(x=>x.a!==item.a).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.a); let opts=[item.a,...wrongs].sort(()=>Math.random()-.5); opts.forEach(text=>{let b=document.createElement('button');b.className='option';b.textContent=text;b.onclick=()=>checkAnswer(b,text,item.a);optEl.appendChild(b);});}
+function checkAnswer(btn,chosen,right){if(answered)return; answered=true; attempts++; if(chosen===right){correct++;btn.classList.add('correct');}else{btn.classList.add('wrong');[...optEl.children].forEach(b=>{if(b.textContent===right)b.classList.add('correct')});}scoreEl.textContent=`${correct} / ${attempts}`;}
+function flipCard(){if(modeEl.value==='study')cardEl.classList.toggle('flipped')}
+function nextCard(){index=(index+1)%deck.length;render()}
+function prevCard(){index=(index-1+deck.length)%deck.length;render()}
+function shuffleCards(){deck=filtered().sort(()=>Math.random()-.5);index=0;render()}
+function resetScore(){correct=0;attempts=0;render()}
+modeEl.onchange=render; catEl.onchange=()=>{index=0;render()};
+setupCategories(); render();
+</script>
+</body>
+</html>
