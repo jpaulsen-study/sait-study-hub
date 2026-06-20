@@ -24,10 +24,10 @@ button,select{border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-
     <button onclick="prevCard()" class="secondary">Previous</button>
     <button onclick="nextCard()" class="secondary">Next</button>
     <button onclick="shuffleCards()">Shuffle</button>
-    <button onclick="resetScore()" class="secondary">Reset Score</button><button onclick="goHome()" class="secondary">🏠 Main Page</button>
+    <button onclick="resetScore()" class="secondary">Reset Score</button><button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button><button onclick="speakCurrent(true)">🔊 Read Again</button><button onclick="goHome()" class="secondary">🏠 Main Page</button>
   </div>
   <div class="mode-note" id="modeNote">Click the card to flip it.</div>
-  <div class="stats"><span id="counter"></span> | Score: <span class="score" id="score">0 / 0</span></div>
+  <div class="stats"><span id="counter"></span> | Score: <span class="score" id="score">0 / 0</span> | Audio: <span id="audioStatus">Off</span></div>
   <div class="card-wrap">
     <div class="card" id="card" onclick="flipCard()">
       <div class="side front"><div class="label">Question</div><div id="question"></div><div class="category" id="cardCategory"></div></div>
@@ -105,18 +105,57 @@ let deck=[...cards], index=0, correct=0, attempts=0, answered=false;
 const cardEl=document.getElementById('card'), qEl=document.getElementById('question'), aEl=document.getElementById('answer'), counterEl=document.getElementById('counter'), scoreEl=document.getElementById('score'), optEl=document.getElementById('options'), modeEl=document.getElementById('mode'), catEl=document.getElementById('category');
 function setupCategories(){[...new Set(cards.map(x=>x.c))].forEach(c=>{let o=document.createElement('option');o.value=c;o.textContent=c;catEl.appendChild(o);});}
 function filtered(){const cat=catEl.value;return cat==='All'?[...cards]:cards.filter(x=>x.c===cat)}
-function render(){deck=filtered(); if(index>=deck.length) index=0; const item=deck[index]; cardEl.classList.remove('flipped'); qEl.textContent=item.q; aEl.textContent=item.a; document.getElementById('cardCategory').textContent=item.c; document.getElementById('cardCategoryBack').textContent=item.c; counterEl.textContent=`Card ${index+1} of ${deck.length}`; scoreEl.textContent=`${correct} / ${attempts}`; answered=false; renderMode();}
+function render(){deck=filtered(); if(index>=deck.length) index=0; const item=deck[index]; cardEl.classList.remove('flipped'); qEl.textContent=item.q; aEl.textContent=item.a; document.getElementById('cardCategory').textContent=item.c; document.getElementById('cardCategoryBack').textContent=item.c; counterEl.textContent=`Card ${index+1} of ${deck.length}`; scoreEl.textContent=`${correct} / ${attempts}`; answered=false; renderMode();setTimeout(()=>speakCurrent(false),150);}
 function renderMode(){if(modeEl.value==='study'){optEl.classList.add('hidden');document.getElementById('modeNote').textContent='Click the card to flip it.';}else{optEl.classList.remove('hidden');document.getElementById('modeNote').textContent='Choose the correct answer.';makeOptions();}}
 function makeOptions(){optEl.innerHTML=''; const item=deck[index]; let wrongs=cards.filter(x=>x.a!==item.a).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.a); let opts=[item.a,...wrongs].sort(()=>Math.random()-.5); opts.forEach(text=>{let b=document.createElement('button');b.className='option';b.textContent=text;b.onclick=()=>checkAnswer(b,text,item.a);optEl.appendChild(b);});}
 function checkAnswer(btn,chosen,right){if(answered)return; answered=true; attempts++; if(chosen===right){correct++;btn.classList.add('correct');}else{btn.classList.add('wrong');[...optEl.children].forEach(b=>{if(b.textContent===right)b.classList.add('correct')});}scoreEl.textContent=`${correct} / ${attempts}`;}
-function flipCard(){if(modeEl.value==='study')cardEl.classList.toggle('flipped')}
+function flipCard(){if(modeEl.value==='study'){cardEl.classList.toggle('flipped');setTimeout(()=>speakCurrent(false),100);}}
 function nextCard(){index=(index+1)%deck.length;render()}
 function prevCard(){index=(index-1+deck.length)%deck.length;render()}
 function shuffleCards(){deck=filtered().sort(()=>Math.random()-.5);index=0;render()}
 function resetScore(){correct=0;attempts=0;render()}
+
+let audioOn = localStorage.getItem("cal2AudioOn")==="1";
+
+function updateAudioUI(){
+ const a=document.getElementById("audioStatus");
+ const b=document.getElementById("audioBtn");
+ if(a)a.textContent=audioOn?"On":"Off";
+ if(b)b.textContent=audioOn?"🔊 Audio On":"🔇 Audio Off";
+}
+
+function toggleAudio(){
+ audioOn=!audioOn;
+ localStorage.setItem("cal2AudioOn",audioOn?"1":"0");
+ if(!audioOn && "speechSynthesis" in window) speechSynthesis.cancel();
+ updateAudioUI();
+ if(audioOn) speakCurrent(true);
+}
+
+function speakText(t,force=false){
+ if(!force && !audioOn) return;
+ if(!("speechSynthesis" in window)) return;
+ t=String(t).replace(/\s*\?/g," ?");
+ speechSynthesis.cancel();
+ let u=new SpeechSynthesisUtterance(t);
+ u.rate=.92;
+ u.pitch=1;
+ let v=speechSynthesis.getVoices().find(x=>x.lang && x.lang.toLowerCase().startsWith("en"));
+ if(v)u.voice=v;
+ speechSynthesis.speak(u);
+}
+
+function speakCurrent(force=false){
+ if(modeEl.value==="study" && cardEl.classList.contains("flipped")){
+   speakText(deck[index].a,force);
+ }else{
+   speakText(deck[index].q,force);
+ }
+}
+
 function goHome(){window.location.href="https://jpaulsen-study.github.io/sait-study-hub/";}
 modeEl.onchange=render; catEl.onchange=()=>{index=0;render()};
-setupCategories(); render();
+updateAudioUI(); setupCategories(); render();
 </script>
 </body>
 </html>
