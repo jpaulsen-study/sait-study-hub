@@ -53,7 +53,7 @@ button:hover,select:hover{background:#eee}
       <option value="study">Study Mode</option>
     </select>
     <button onclick="shuffleCards()">Shuffle</button>
-    <button onclick="resetScore()">Reset Score</button><button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button><button onclick="goHome()">🏠 Main Page</button>
+    <button onclick="resetScore()">Reset Score</button><button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button>
   </div>
 
   <div class="scorebar">
@@ -168,7 +168,6 @@ function show(){
     choices.innerHTML = opts.map(x => `<button class="choice" onclick="pick(this, '${escapeJS(x)}')">${x}</button>`).join("");
   }
   updateScore();
-
 setTimeout(()=>speakQuestion(false),150);
 }
 
@@ -184,27 +183,20 @@ function pick(btn, val){
   buttons.forEach(b => {
     if(b.textContent === c.a) b.classList.add("correct");
   });
+
   if(val === c.a){
     correct++;
     btn.classList.add("correct");
+    speakText("Correct. Answer. " + c.a + ". Formula or rule. " + c.formula,false);
   } else {
     wrong++;
     btn.classList.add("wrong");
+    speakText("Incorrect. The correct answer is. " + c.a + ". Formula or rule. " + c.formula,false);
   }
+
   formula.style.display = "block";
-  speakAnswer(false);
   updateScore();
 }
-
-function showFormula(){
-  formula.style.display = "block";
-  if(mode.value === "study"){ studyAnswer.style.display = "block"; speakAnswer(false);}
-}
-
-function nextCard(){ i++; show(); }
-function prevCard(){ i--; show(); }
-function shuffleCards(){ shuffleArray(cards); i=0; show(); }
-function resetScore(){ correct=0; wrong=0; updateScore(); }
 
 document.onkeydown = e => {
   if(e.key === "ArrowRight") nextCard();
@@ -257,13 +249,8 @@ function speakQuestion(force=false){
 }
 
 function speakAnswer(force=false){
-  if(cards.length){
-    const c = cards[i];
-    speakText("Answer. " + c.a + ". Formula or rule. " + c.formula, force);
-  }
+  if(cards.length) speakText(cards[i].a,force);
 }
-
-function goHome(){window.location.href="https://jpaulsen-study.github.io/sait-study-hub/";}
 
 updateAudioUI();
 setup();
