@@ -582,27 +582,34 @@ function toggleAudio(){
 
 function cleanSpeechText(t){
     return String(t)
-        .replace(/_____/g,"")
+        .replace(/\s+\?/g," ?")
+        .replace(/\s+\./g,".")
+        .replace(/\s+,/g,",")
         .replace(/PSIA/gi,"P.S.I.A")
         .replace(/PSIG/gi,"P.S.I.G")
         .replace(/\bPSI\b/gi,"P.S.I")
-        .replace(/\bWC\b/gi,"Water Column")
-        .replace(/\bIMP\b/gi,"Imperial")
-        .replace(/\bGAL\b/gi,"Gallon")
         .replace(/\bNPS\b/gi,"N.P.S")
         .replace(/\bTPI\b/gi,"T.P.I")
-        .replace(/\bOD\b/gi,"O.D")
-        .replace(/\bID\b/gi,"I.D")
-        .replace(/\bMJ\b/gi,"M.J")
-        .replace(/\bRFWN\b/gi,"R.F.W.N")
-        .replace(/\bPTFE\b/gi,"P.T.F.E")
-        .replace(/\bRPM\b/gi,"R.P.M")
-        .replace(/\+/g," add ")
+        .replace(/\bOD\b/g,"O.D")
+        .replace(/\bID\b/g,"I.D")
+        .replace(/\bMJ\b/g,"M.J")
+        .replace(/\bRFWN\b/g,"R.F.W.N")
+        .replace(/\bPTFE\b/g,"P.T.F.E")
+        .replace(/\bRPM\b/g,"R.P.M")
+        .replace(/\bmm\b/gi,"millimetres")
+        .replace(/\bcm\b/gi,"centimetres")
+        .replace(/\bm\b/g,"metres")
+        .replace(/\bft\b/gi,"feet")
+        .replace(/\bin\b/gi,"inches")
+        .replace(/\bgal\b/gi,"gallon")
+        .replace(/\bImp\b/g,"imperial")
+        .replace(/\bwc\b/gi,"water column")
         .replace(/÷/g," divide ")
-        .replace(/ x /gi," multiply ")
-        .replace(/\*/g," multiply ")
-        .replace(/[?:;,]/g," ")
-        .replace(/\s+/g," ")
+        .replace(/×|x/g," multiply ")
+        .replace(/\+/g," add ")
+        .replace(/-/g," subtract ")
+        .replace(/_/g," blank ")
+        .replace(/\s{2,}/g," ")
         .trim();
 }
 
@@ -648,3 +655,21 @@ init();
 </script>
 </body>
 </html>
+
+/* AUDIO UPDATE: 3 second pause for _____ */
+function pauseAwareSpeak(text){
+  speechSynthesis.cancel();
+  const parts = String(text).split(/_{3,}/);
+
+  function speakPart(i){
+    if(i>=parts.length) return;
+    const u = new SpeechSynthesisUtterance(parts[i].replace(/[?:;,]/g,' ').trim());
+    u.onend = function(){
+      if(i < parts.length-1){
+        setTimeout(function(){ speakPart(i+1); },3000);
+      }
+    };
+    speechSynthesis.speak(u);
+  }
+  speakPart(0);
+}
