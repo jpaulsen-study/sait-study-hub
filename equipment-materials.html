@@ -84,6 +84,7 @@ button:hover{background:#eee}
 <button onclick="showAnswer()">Show Answer</button>
 <button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button>
 <button onclick="speakCurrentCard(true)">🔊 Read Again</button>
+<button onclick="goHome()">🏠 Main Page</button>
 </div>
 </div>
 
@@ -271,6 +272,10 @@ document.onkeydown=e=>{
     if(e.key==="ArrowLeft")prevCard();
     if(e.key===" "||e.key==="Enter"){e.preventDefault();showAnswer();}
 };
+
+function goHome(){
+    window.location.href = "https://jpaulsen-study.github.io/sait-study-hub/";
+}
 
 init();
 </script>
