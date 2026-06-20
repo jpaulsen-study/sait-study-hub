@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAIT Calculation & Science Study Game</title>
+<style>
+:root{
+  --black:#111;--white:#fff;--grey:#f2f2f2;--line:#111;--good:#d9f7d9;--bad:#ffe0e0;--yellow:#fff7cc;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f4f4;color:#111}
+header{background:#111;color:#fff;text-align:center;padding:16px 10px}
+h1{margin:0;font-size:25px}
+.subtitle{font-size:14px;margin-top:5px}
+.wrap{max-width:1050px;margin:auto;padding:14px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px;margin-bottom:12px}
+select,button{font-size:16px;padding:10px;border:2px solid #111;border-radius:9px;background:#fff;cursor:pointer}
+button:hover,select:hover{background:#eee}
+.scorebar{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.pill{border:2px solid #111;background:#fff;border-radius:9px;padding:10px;text-align:center;font-weight:bold}
+.card{background:#fff;border:3px solid #111;border-radius:18px;min-height:310px;padding:18px;box-shadow:0 4px 14px #999}
+.tag{display:inline-block;border:2px solid #111;border-radius:20px;padding:6px 12px;font-weight:bold;background:#f8f8f8;margin-bottom:12px}
+.q{font-size:28px;font-weight:bold;line-height:1.25;margin:8px 0 16px}
+.formula{font-size:19px;background:var(--yellow);border:2px dashed #111;border-radius:12px;padding:12px;margin:12px 0;display:none}
+.studyAnswer{font-size:23px;background:#f7f7f7;border:2px solid #111;border-radius:12px;padding:14px;margin-top:14px;display:none}
+.choices{display:grid;gap:10px;margin-top:12px}
+.choice{text-align:left;font-weight:bold;background:#fff}
+.choice.correct{background:var(--good)}
+.choice.wrong{background:var(--bad)}
+.nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-top:12px}
+.small{font-size:13px;color:#333;margin-top:10px}
+.modebox{background:#fff;border:2px solid #111;border-radius:12px;padding:10px;margin-bottom:12px}
+.modeHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.miniBtn{font-size:13px;padding:6px 10px;border-radius:7px}
+.list{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px;margin-top:8px;font-size:14px}
+.list.hide{display:none}
+.list div{border:1px solid #111;background:#fff;padding:7px;border-radius:8px}
+@media(max-width:650px){.q{font-size:22px}.card{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>SAIT Calculation & Science Study Game</h1>
+  <div class="subtitle">Formulas • Unit Conversions • Matter, Density & Relative Density • Quiz Mode • Study Mode</div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <select id="cat" onchange="changeCategory()"></select>
+    <select id="mode" onchange="setMode()">
+      <option value="quiz">Quiz Mode</option>
+      <option value="study">Study Mode</option>
+    </select>
+    <button onclick="shuffleCards()">Shuffle</button>
+    <button onclick="resetScore()">Reset Score</button>
+  </div>
+
+  <div class="scorebar">
+    <div class="pill">Card <span id="num">1</span> / <span id="total">0</span></div>
+    <div class="pill">Correct: <span id="right">0</span></div>
+    <div class="pill">Wrong: <span id="wrong">0</span></div>
+    <div class="pill">Score: <span id="score">0%</span></div>
+  </div>
+
+  <div class="modebox">
+    <div class="modeHead">
+      <b>Categories included:</b>
+      <button class="miniBtn" onclick="toggleCategories()">Minimize</button>
+    </div>
+    <div class="list" id="catList"></div>
+  </div>
+
+  <div class="card">
+    <div id="tag" class="tag"></div>
+    <div id="question" class="q"></div>
+
+    <div id="choices" class="choices"></div>
+
+    <div id="studyAnswer" class="studyAnswer"></div>
+    <div id="formula" class="formula"></div>
+
+    <div class="small">Tip: Use Study Mode first, then Quiz Mode. Keyboard: ← Previous, → Next, Enter/Space reveal in Study Mode.</div>
+  </div>
+
+  <div class="nav">
+    <button onclick="prevCard()">Previous</button>
+    <button onclick="showFormula()">Show Formula</button>
+    <button onclick="nextCard()">Next</button>
+  </div>
+</div>
+
+<script>
+const BASE = [{"cat": "Unit Conversions", "q": "Convert millimetres to centimetres.", "a": "cm = mm ÷ 10", "formula": "1 cm = 10 mm", "choices": ["cm = mm ÷ 10", "mm = cm × 10", "ft = in ÷ 12"]}, {"cat": "Unit Conversions", "q": "Convert centimetres to millimetres.", "a": "mm = cm × 10", "formula": "1 cm = 10 mm", "choices": ["mm = cm × 10", "cm = m × 100", "m³ = L ÷ 1000"]}, {"cat": "Unit Conversions", "q": "Convert centimetres to metres.", "a": "m = cm ÷ 100", "formula": "1 m = 100 cm", "choices": ["m = cm ÷ 100", "mm = m × 1000", "cu ft = Imp gal ÷ 6.24"]}, {"cat": "Unit Conversions", "q": "Convert metres to centimetres.", "a": "cm = m × 100", "formula": "1 m = 100 cm", "choices": ["cm = m × 100", "in = ft × 12", "kPa = psi × 6.895"]}, {"cat": "Unit Conversions", "q": "Convert millimetres to metres.", "a": "m = mm ÷ 1000", "formula": "1 m = 1000 mm", "choices": ["m = mm ÷ 1000", "L = m³ × 1000", "W = hp × 746"]}, {"cat": "Unit Conversions", "q": "Convert metres to millimetres.", "a": "mm = m × 1000", "formula": "1 m = 1000 mm", "choices": ["mm = m × 1000", "Imp gal = cu ft × 6.24", "mm = cm × 10"]}, {"cat": "Unit Conversions", "q": "Convert inches to feet.", "a": "ft = in ÷ 12", "formula": "1 ft = 12 in", "choices": ["ft = in ÷ 12", "psi = kPa ÷ 6.895", "cm = m × 100"]}, {"cat": "Unit Conversions", "q": "Convert feet to inches.", "a": "in = ft × 12", "formula": "1 ft = 12 in", "choices": ["in = ft × 12", "cm = mm ÷ 10", "mm = m × 1000"]}, {"cat": "Unit Conversions", "q": "Convert litres to cubic metres.", "a": "m³ = L ÷ 1000", "formula": "1 m³ = 1000 L", "choices": ["m³ = L ÷ 1000", "m = cm ÷ 100", "in = ft × 12"]}, {"cat": "Unit Conversions", "q": "Convert cubic metres to litres.", "a": "L = m³ × 1000", "formula": "1 m³ = 1000 L", "choices": ["L = m³ × 1000", "m = mm ÷ 1000", "cu ft = Imp gal ÷ 6.24"]}, {"cat": "Unit Conversions", "q": "Convert Imperial gallons to cubic feet.", "a": "cu ft = Imp gal ÷ 6.24", "formula": "1 cu ft = 6.24 Imp gal", "choices": ["cu ft = Imp gal ÷ 6.24", "ft = in ÷ 12", "kPa = psi × 6.895"]}, {"cat": "Unit Conversions", "q": "Convert cubic feet to Imperial gallons.", "a": "Imp gal = cu ft × 6.24", "formula": "1 cu ft = 6.24 Imp gal", "choices": ["Imp gal = cu ft × 6.24", "m³ = L ÷ 1000", "W = hp × 746"]}, {"cat": "Unit Conversions", "q": "Convert psi to kPa approximately.", "a": "kPa = psi × 6.895", "formula": "1 psi ≈ 6.895 kPa", "choices": ["kPa = psi × 6.895", "cu ft = Imp gal ÷ 6.24", "mm = cm × 10"]}, {"cat": "Unit Conversions", "q": "Convert kPa to psi approximately.", "a": "psi = kPa ÷ 6.895", "formula": "1 psi ≈ 6.895 kPa", "choices": ["psi = kPa ÷ 6.895", "kPa = psi × 6.895", "cm = m × 100"]}, {"cat": "Unit Conversions", "q": "Convert horsepower to watts approximately.", "a": "W = hp × 746", "formula": "1 hp ≈ 746 W", "choices": ["W = hp × 746", "cm = mm ÷ 10", "mm = m × 1000"]}, {"cat": "Perimeter", "q": "What is the perimeter formula for a rectangle?", "a": "P = 2L + 2W", "formula": "P = 2(L + W)", "choices": ["P = 2L + 2W", "P = 4s", "C = πd"]}, {"cat": "Perimeter", "q": "What is the perimeter formula for a square?", "a": "P = 4s", "formula": "P = 4 × side", "choices": ["P = 4s", "C = πd", "P = 2(7) + 2(4)"]}, {"cat": "Perimeter", "q": "What is the perimeter formula for a triangle?", "a": "P = a + b + c", "formula": "Add all 3 sides", "choices": ["P = a + b + c", "P = 2(7) + 2(4)", "P = 4s"]}, {"cat": "Perimeter", "q": "What is the circumference formula using diameter?", "a": "C = πd", "formula": "C = π × diameter", "choices": ["C = πd", "P = 4s", "C = 2πr"]}, {"cat": "Perimeter", "q": "What is the circumference formula using radius?", "a": "C = 2πr", "formula": "C = 2 × π × radius", "choices": ["C = 2πr", "C = πd", "P = 2L + 2W"]}, {"cat": "Perimeter", "q": "A rectangle is 7 ft long and 4 ft wide. What formula finds the perimeter?", "a": "P = 2(7) + 2(4)", "formula": "P = 2L + 2W", "choices": ["P = 2(7) + 2(4)", "P = 2L + 2W", "P = a + b + c"]}, {"cat": "Area", "q": "What is the area formula for a rectangle?", "a": "A = L × W", "formula": "Area = length × width", "choices": ["A = L × W", "A = s²", "A = πR² − πr²"]}, {"cat": "Area", "q": "What is the area formula for a square?", "a": "A = s²", "formula": "Area = side × side", "choices": ["A = s²", "A = πr²", "A = bh ÷ 2"]}, {"cat": "Area", "q": "What is the area formula for a triangle?", "a": "A = bh ÷ 2", "formula": "Area = base × height ÷ 2", "choices": ["A = bh ÷ 2", "Square units", "A = πd² ÷ 4"]}, {"cat": "Area", "q": "What is the area formula for a circle using radius?", "a": "A = πr²", "formula": "Area = π × radius²", "choices": ["A = πr²", "A = L × W", "A = πR² − πr²"]}, {"cat": "Area", "q": "What is the area formula for a circle using diameter?", "a": "A = πd² ÷ 4", "formula": "Area = π × diameter² ÷ 4", "choices": ["A = πd² ÷ 4", "A = bh ÷ 2", "A = s²"]}, {"cat": "Area", "q": "What units are used for area?", "a": "Square units", "formula": "Examples: in², ft², mm², m²", "choices": ["Square units", "A = πd² ÷ 4", "A = πr²"]}, {"cat": "Area", "q": "What is the formula for the area of a ring/washer?", "a": "A = πR² − πr²", "formula": "Outer circle area − inner circle area", "choices": ["A = πR² − πr²", "A = L × W", "Square units"]}, {"cat": "Surface Area", "q": "What is surface area?", "a": "The total area covering the outside of a 3D object", "formula": "Surface area uses square units", "choices": ["The total area covering the outside of a 3D object", "SA = 2LW + 2LH + 2WH", "SA = 2πr² + 2πrH"]}, {"cat": "Surface Area", "q": "Surface area of a cube?", "a": "SA = 6s²", "formula": "6 equal square faces", "choices": ["SA = 6s²", "SA = 2πr² + 2πrH", "The total area covering the outside of a 3D object"]}, {"cat": "Surface Area", "q": "Surface area of a rectangular box?", "a": "SA = 2LW + 2LH + 2WH", "formula": "Add area of all 6 sides", "choices": ["SA = 2LW + 2LH + 2WH", "The total area covering the outside of a 3D object", "LA = πdH"]}, {"cat": "Surface Area", "q": "Lateral area of a cylinder?", "a": "LA = πdH", "formula": "Side area only = circumference × height", "choices": ["LA = πdH", "SA = 2LW + 2LH + 2WH", "SA = 4πr²"]}, {"cat": "Surface Area", "q": "Total surface area of a closed cylinder?", "a": "SA = 2πr² + 2πrH", "formula": "Two circles + curved side", "choices": ["SA = 2πr² + 2πrH", "SA = 4πr²", "SA = 6s²"]}, {"cat": "Surface Area", "q": "Surface area of a sphere?", "a": "SA = 4πr²", "formula": "Sphere surface area", "choices": ["SA = 4πr²", "SA = 6s²", "LA = πdH"]}, {"cat": "Percentage", "q": "What does percent mean?", "a": "Per hundred", "formula": "25% = 25 ÷ 100 = 0.25", "choices": ["Per hundred", "New amount = original × (1 + rate)", "Part = percent × whole"]}, {"cat": "Percentage", "q": "Find percent of a number.", "a": "Part = percent × whole", "formula": "Convert percent to decimal first", "choices": ["Part = percent × whole", "Per hundred", "Whole = part ÷ percent"]}, {"cat": "Percentage", "q": "Find what percent one number is of another.", "a": "Percent = part ÷ whole × 100", "formula": "% = part / whole × 100", "choices": ["Percent = part ÷ whole × 100", "Whole = part ÷ percent", "New amount = original × (1 − rate)"]}, {"cat": "Percentage", "q": "Find the whole when percent and part are known.", "a": "Whole = part ÷ percent", "formula": "Use decimal form of percent", "choices": ["Whole = part ÷ percent", "New amount = original × (1 − rate)", "Part = percent × whole"]}, {"cat": "Percentage", "q": "Increase a number by a percent.", "a": "New amount = original × (1 + rate)", "formula": "Rate must be decimal", "choices": ["New amount = original × (1 + rate)", "Part = percent × whole", "Whole = part ÷ percent"]}, {"cat": "Percentage", "q": "Decrease a number by a percent.", "a": "New amount = original × (1 − rate)", "formula": "Rate must be decimal", "choices": ["New amount = original × (1 − rate)", "Whole = part ÷ percent", "Per hundred"]}, {"cat": "Grade", "q": "What is the formula for grade percent?", "a": "Grade % = rise ÷ run × 100", "formula": "Grade = vertical change / horizontal distance × 100", "choices": ["Grade % = rise ÷ run × 100", "The vertical change", "The horizontal distance"]}, {"cat": "Grade", "q": "What is rise in a grade problem?", "a": "The vertical change", "formula": "Rise = up or down distance", "choices": ["The vertical change", "Rise = grade decimal × run", "Run = rise ÷ grade decimal"]}, {"cat": "Grade", "q": "What is run in a grade problem?", "a": "The horizontal distance", "formula": "Run = level distance forward", "choices": ["The horizontal distance", "Grade % = rise ÷ run × 100", "The vertical change"]}, {"cat": "Grade", "q": "How do you find rise if grade percent and run are known?", "a": "Rise = grade decimal × run", "formula": "Grade decimal = grade % ÷ 100", "choices": ["Rise = grade decimal × run", "The horizontal distance", "Run = rise ÷ grade decimal"]}, {"cat": "Grade", "q": "How do you find run if rise and grade percent are known?", "a": "Run = rise ÷ grade decimal", "formula": "Grade decimal = grade % ÷ 100", "choices": ["Run = rise ÷ grade decimal", "Grade % = rise ÷ run × 100", "The vertical change"]}, {"cat": "Volumes", "q": "What is volume?", "a": "The amount of space inside a 3D object", "formula": "Volume uses cubic units", "choices": ["The amount of space inside a 3D object", "V = πr²H ÷ 3", "V = 4/3πr³"]}, {"cat": "Volumes", "q": "Volume of a rectangular tank?", "a": "V = L × W × H", "formula": "Length × width × height", "choices": ["V = L × W × H", "V = s³", "V = πr²H ÷ 3"]}, {"cat": "Volumes", "q": "Volume of a cube?", "a": "V = s³", "formula": "side × side × side", "choices": ["V = s³", "V = πd²H ÷ 4", "V = L × W × H"]}, {"cat": "Volumes", "q": "Volume of a cylinder using radius?", "a": "V = πr²H", "formula": "Circle area × height", "choices": ["V = πr²H", "V = 2/3πr³", "V = πd²H ÷ 4"]}, {"cat": "Volumes", "q": "Volume of a cylinder using diameter?", "a": "V = πd²H ÷ 4", "formula": "π × diameter² × height ÷ 4", "choices": ["V = πd²H ÷ 4", "The amount of space inside a 3D object", "V = 2/3πr³"]}, {"cat": "Volumes", "q": "Volume of a sphere?", "a": "V = 4/3πr³", "formula": "Four thirds × π × radius³", "choices": ["V = 4/3πr³", "V = s³", "The amount of space inside a 3D object"]}, {"cat": "Volumes", "q": "Volume of a hemisphere?", "a": "V = 2/3πr³", "formula": "Half of a sphere", "choices": ["V = 2/3πr³", "V = πd²H ÷ 4", "V = s³"]}, {"cat": "Volumes", "q": "Volume of a cone?", "a": "V = πr²H ÷ 3", "formula": "One third of cylinder volume", "choices": ["V = πr²H ÷ 3", "V = 2/3πr³", "V = πd²H ÷ 4"]}, {"cat": "Capacities", "q": "What is capacity?", "a": "How much a container can hold", "formula": "Usually measured in L, m³, gal, ft³", "choices": ["How much a container can hold", "m³ = L ÷ 1000", "ft³ = Imp gal ÷ 6.24"]}, {"cat": "Capacities", "q": "Convert cubic metres to litres for capacity.", "a": "Litres = m³ × 1000", "formula": "1 m³ = 1000 L", "choices": ["Litres = m³ × 1000", "ft³ = Imp gal ÷ 6.24", "How much a container can hold"]}, {"cat": "Capacities", "q": "Convert litres to cubic metres for capacity.", "a": "m³ = L ÷ 1000", "formula": "1000 L = 1 m³", "choices": ["m³ = L ÷ 1000", "How much a container can hold", "Imp gal = ft³ × 6.24"]}, {"cat": "Capacities", "q": "For tank capacity, convert cubic feet to Imperial gallons.", "a": "Imp gal = ft³ × 6.24", "formula": "1 ft³ = 6.24 Imp gal", "choices": ["Imp gal = ft³ × 6.24", "m³ = L ÷ 1000", "Find pipe volume first"]}, {"cat": "Capacities", "q": "For tank capacity, convert Imperial gallons to cubic feet.", "a": "ft³ = Imp gal ÷ 6.24", "formula": "Use 6.24 for Imperial gallons", "choices": ["ft³ = Imp gal ÷ 6.24", "Find pipe volume first", "Litres = m³ × 1000"]}, {"cat": "Capacities", "q": "Capacity of a horizontal pipe section is found by what first?", "a": "Find pipe volume first", "formula": "V = πd²L ÷ 4", "choices": ["Find pipe volume first", "Litres = m³ × 1000", "Imp gal = ft³ × 6.24"]}, {"cat": "Pipe Offsets", "q": "In a pipe offset, what is travel?", "a": "The diagonal length between two offset fittings", "formula": "Travel is the hypotenuse", "choices": ["The diagonal length between two offset fittings", "Offset = √(travel² − run²)", "a² + b² = c²"]}, {"cat": "Pipe Offsets", "q": "For a 45° offset, what multiplier is commonly used?", "a": "1.414", "formula": "Travel = offset × 1.414", "choices": ["1.414", "The diagonal length between two offset fittings", "Run = √(travel² − offset²)"]}, {"cat": "Pipe Offsets", "q": "For a 45° offset, how do you find travel?", "a": "Travel = offset × 1.414", "formula": "1.414 is √2", "choices": ["Travel = offset × 1.414", "Travel = √(run² + offset²)", "1.414"]}, {"cat": "Pipe Offsets", "q": "For a right triangle offset, how do you find travel using run and offset?", "a": "Travel = √(run² + offset²)", "formula": "Pythagorean theorem", "choices": ["Travel = √(run² + offset²)", "Offset = √(travel² − run²)", "a² + b² = c²"]}, {"cat": "Pipe Offsets", "q": "What is the Pythagorean theorem?", "a": "a² + b² = c²", "formula": "c is the hypotenuse/travel", "choices": ["a² + b² = c²", "The diagonal length between two offset fittings", "Run = √(travel² − offset²)"]}, {"cat": "Pipe Offsets", "q": "How do you find offset if travel and run are known?", "a": "Offset = √(travel² − run²)", "formula": "Rearranged Pythagorean theorem", "choices": ["Offset = √(travel² − run²)", "Travel = offset × 1.414", "1.414"]}, {"cat": "Pipe Offsets", "q": "How do you find run if travel and offset are known?", "a": "Run = √(travel² − offset²)", "formula": "Rearranged Pythagorean theorem", "choices": ["Run = √(travel² − offset²)", "a² + b² = c²", "Travel = √(run² + offset²)"]}, {"cat": "Matter, Density & Relative Density", "q": "What is matter?", "a": "Anything that has mass and takes up space", "formula": "Matter has mass and volume", "choices": ["Anything that has mass and takes up space", "The force caused by gravity acting on mass", "They contract"]}, {"cat": "Matter, Density & Relative Density", "q": "What are the three common states of matter?", "a": "Solid, liquid, and gas", "formula": "Plasma is another state, but the main three are solid/liquid/gas", "choices": ["Solid, liquid, and gas", "They contract", "The amount of matter in an object"]}, {"cat": "Matter, Density & Relative Density", "q": "What is mass?", "a": "The amount of matter in an object", "formula": "Common units: g, kg", "choices": ["The amount of matter in an object", "Solid, liquid, and gas", "They expand"]}, {"cat": "Matter, Density & Relative Density", "q": "What is weight?", "a": "The force caused by gravity acting on mass", "formula": "Weight = mass × gravity", "choices": ["The force caused by gravity acting on mass", "They expand", "Anything that has mass and takes up space"]}, {"cat": "Matter, Density & Relative Density", "q": "What happens to most materials when heated?", "a": "They expand", "formula": "Heating usually increases volume", "choices": ["They expand", "Anything that has mass and takes up space", "The amount of matter in an object"]}, {"cat": "Matter, Density & Relative Density", "q": "What happens to most materials when cooled?", "a": "They contract", "formula": "Cooling usually decreases volume", "choices": ["They contract", "The amount of matter in an object", "They expand"]}, {"cat": "Matter, Density & Relative Density", "q": "What is density?", "a": "Mass per unit volume", "formula": "Density = mass ÷ volume", "choices": ["Mass per unit volume", "Volume per unit mass", "Mass compared to water"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the density formula?", "a": "D = M ÷ V", "formula": "D = density, M = mass, V = volume", "choices": ["D = M ÷ V", "D = V ÷ M", "D = M × V"]}, {"cat": "Matter, Density & Relative Density", "q": "How do you find mass if density and volume are known?", "a": "M = D × V", "formula": "Mass = density × volume", "choices": ["M = D × V", "M = D ÷ V", "M = V ÷ D"]}, {"cat": "Matter, Density & Relative Density", "q": "How do you find volume if mass and density are known?", "a": "V = M ÷ D", "formula": "Volume = mass ÷ density", "choices": ["V = M ÷ D", "V = D ÷ M", "V = M × D"]}, {"cat": "Matter, Density & Relative Density", "q": "What are common metric density units?", "a": "kg/m³ or g/cm³", "formula": "Density units are mass/volume", "choices": ["kg/m³ or g/cm³", "kg/cm³ or g/m³", "m³/kg or cm³/g"]}, {"cat": "Matter, Density & Relative Density", "q": "If density increases and volume stays the same, what happens to mass?", "a": "Mass increases", "formula": "M = D × V", "choices": ["Mass increases", "Mass decreases", "Mass stays the same"]}, {"cat": "Matter, Density & Relative Density", "q": "What is relative density?", "a": "The density of a substance compared to water", "formula": "Relative density = substance density ÷ water density", "choices": ["The density of a substance compared to water", "The mass of water compared to air", "The volume of a substance compared to pressure"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the formula for relative density?", "a": "RD = density of substance ÷ density of water", "formula": "RD has no units", "choices": ["RD = density of substance ÷ density of water", "RD = density of water ÷ density of substance", "RD = mass × volume"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the relative density of water?", "a": "1.0", "formula": "Water is the reference", "choices": ["1.0", "0.5", "1.5"]}, {"cat": "Matter, Density & Relative Density", "q": "If a liquid has RD less than 1, what will it usually do in water?", "a": "Float", "formula": "Less dense than water", "choices": ["Float", "Sink", "Stay exactly neutral"]}, {"cat": "Matter, Density & Relative Density", "q": "If a liquid has RD greater than 1, what will it usually do in water?", "a": "Sink", "formula": "More dense than water", "choices": ["Sink", "Float", "Evaporate"]}, {"cat": "Matter, Density & Relative Density", "q": "Why does relative density have no unit?", "a": "It is a ratio of two densities", "formula": "Same units cancel out", "choices": ["It is a ratio of two densities", "It is measured only by weight", "It is always equal to water"]}, {"cat": "Pressure", "q": "What is pressure?", "a": "Force applied over an area", "formula": "Pressure = force ÷ area", "choices": ["Force applied over an area", "P = F ÷ A", "14.7 psi"]}, {"cat": "Pressure", "q": "What is the pressure formula?", "a": "P = F ÷ A", "formula": "P = pressure, F = force, A = area", "choices": ["P = F ÷ A", "A = F ÷ P", "Force applied over an area"]}, {"cat": "Pressure", "q": "How do you find force if pressure and area are known?", "a": "F = P × A", "formula": "Force = pressure × area", "choices": ["F = P × A", "Pressure measured from a perfect vacuum", "A = F ÷ P"]}, {"cat": "Pressure", "q": "How do you find area if force and pressure are known?", "a": "A = F ÷ P", "formula": "Area = force ÷ pressure", "choices": ["A = F ÷ P", "101.3 kPa", "Pressure measured from a perfect vacuum"]}, {"cat": "Pressure", "q": "What is gauge pressure?", "a": "Pressure measured above atmospheric pressure", "formula": "Gauge pressure ignores normal atmosphere", "choices": ["Pressure measured above atmospheric pressure", "P = F ÷ A", "101.3 kPa"]}, {"cat": "Pressure", "q": "What is absolute pressure?", "a": "Pressure measured from a perfect vacuum", "formula": "Absolute = gauge + atmosphere", "choices": ["Pressure measured from a perfect vacuum", "A = F ÷ P", "P = F ÷ A"]}, {"cat": "Pressure", "q": "What is the approximate atmospheric pressure at sea level in psi?", "a": "14.7 psi", "formula": "1 atm ≈ 14.7 psi", "choices": ["14.7 psi", "Pressure measured from a perfect vacuum", "A = F ÷ P"]}, {"cat": "Pressure", "q": "What is the approximate atmospheric pressure at sea level in kPa?", "a": "101.3 kPa", "formula": "1 atm ≈ 101.3 kPa", "choices": ["101.3 kPa", "Force applied over an area", "Pressure measured from a perfect vacuum"]}, {"cat": "Atmosphere", "q": "What is atmospheric pressure?", "a": "The pressure caused by the weight of air above us", "formula": "At sea level ≈ 101.3 kPa", "choices": ["The pressure caused by the weight of air above us", "Atmospheric pressure", "101.3 kPa"]}, {"cat": "Atmosphere", "q": "What is 1 atmosphere in psi?", "a": "14.7 psi", "formula": "1 atm ≈ 14.7 psi", "choices": ["14.7 psi", "101.3 kPa", "It decreases"]}, {"cat": "Atmosphere", "q": "What is 1 atmosphere in kPa?", "a": "101.3 kPa", "formula": "1 atm ≈ 101.3 kPa", "choices": ["101.3 kPa", "It decreases", "The pressure caused by the weight of air above us"]}, {"cat": "Atmosphere", "q": "What is 1 atmosphere in bar approximately?", "a": "1.013 bar", "formula": "1 bar = 100 kPa", "choices": ["1.013 bar", "The pressure caused by the weight of air above us", "101.3 kPa"]}, {"cat": "Atmosphere", "q": "What happens to atmospheric pressure as elevation increases?", "a": "It decreases", "formula": "Higher elevation = less air above", "choices": ["It decreases", "101.3 kPa", "Atmospheric pressure"]}, {"cat": "Atmosphere", "q": "What is vacuum pressure usually compared against?", "a": "Atmospheric pressure", "formula": "Vacuum is pressure below atmosphere", "choices": ["Atmospheric pressure", "It decreases", "14.7 psi"]}, {"cat": "Principles of Electricity", "q": "What is voltage?", "a": "Electrical pressure or potential difference", "formula": "Unit: volt (V)", "choices": ["Electrical pressure or potential difference", "RT = R1 + R2 + R3", "I = V ÷ R"]}, {"cat": "Principles of Electricity", "q": "What is current?", "a": "The flow of electrons", "formula": "Unit: ampere (A)", "choices": ["The flow of electrons", "Electrical pressure or potential difference", "The rate electricity is used or produced"]}, {"cat": "Principles of Electricity", "q": "What is resistance?", "a": "Opposition to current flow", "formula": "Unit: ohm (Ω)", "choices": ["Opposition to current flow", "V = I × R", "A circuit with one path for current flow"]}, {"cat": "Principles of Electricity", "q": "What is Ohm’s Law?", "a": "V = I × R", "formula": "Voltage = current × resistance", "choices": ["V = I × R", "R = V ÷ I", "RT = R1 + R2 + R3"]}, {"cat": "Principles of Electricity", "q": "How do you find current using Ohm’s Law?", "a": "I = V ÷ R", "formula": "Current = voltage ÷ resistance", "choices": ["I = V ÷ R", "Watt", "Electrical pressure or potential difference"]}, {"cat": "Principles of Electricity", "q": "How do you find resistance using Ohm’s Law?", "a": "R = V ÷ I", "formula": "Resistance = voltage ÷ current", "choices": ["R = V ÷ I", "A circuit with more than one path for current flow", "Opposition to current flow"]}, {"cat": "Principles of Electricity", "q": "What is electrical power?", "a": "The rate electricity is used or produced", "formula": "P = V × I", "choices": ["The rate electricity is used or produced", "1/RT = 1/R1 + 1/R2 + 1/R3", "I = V ÷ R"]}, {"cat": "Principles of Electricity", "q": "What is the unit for electrical power?", "a": "Watt", "formula": "W = volts × amps", "choices": ["Watt", "The flow of electrons", "The rate electricity is used or produced"]}, {"cat": "Principles of Electricity", "q": "What is a series circuit?", "a": "A circuit with one path for current flow", "formula": "Same current through each load", "choices": ["A circuit with one path for current flow", "V = I × R", "A circuit with more than one path for current flow"]}, {"cat": "Principles of Electricity", "q": "What is a parallel circuit?", "a": "A circuit with more than one path for current flow", "formula": "Same voltage across each branch", "choices": ["A circuit with more than one path for current flow", "R = V ÷ I", "1/RT = 1/R1 + 1/R2 + 1/R3"]}, {"cat": "Principles of Electricity", "q": "Total resistance in series?", "a": "RT = R1 + R2 + R3", "formula": "Add all resistances", "choices": ["RT = R1 + R2 + R3", "Watt", "The flow of electrons"]}, {"cat": "Principles of Electricity", "q": "Total resistance in parallel?", "a": "1/RT = 1/R1 + 1/R2 + 1/R3", "formula": "Parallel resistance is less than the smallest branch", "choices": ["1/RT = 1/R1 + 1/R2 + 1/R3", "A circuit with more than one path for current flow", "V = I × R"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following is a correct definition of matter?", "a": "Anything that has mass and occupies space", "formula": "Matter = anything with mass that occupies space", "choices": ["Anything that has mass and occupies space", "Anything that has volume and can be weighed only when solid", "Anything that occupies space and can be seen"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following is a correct definition of element?", "a": "A substance that cannot be chemically reduced any further", "formula": "Element = a pure substance that cannot be chemically broken down further", "choices": ["A substance that cannot be chemically reduced any further", "A substance made from two or more chemically joined materials", "A substance that can be separated by filtering or settling"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the difference between an element and a compound?", "a": "A compound is a chemical union of different molecules while an element contains only molecules of that element", "formula": "Element = one kind of substance; Compound = chemically united substances", "choices": ["A compound is a chemical union of different molecules while an element contains only molecules of that element", "An element is chemically joined while a compound is only physically mixed", "A compound contains one type of molecule while an element contains several combined substances"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the difference between a compound and a mixture?", "a": "A compound is a chemical union of different molecules while a mixture contains different molecules of different elements, but not chemically united", "formula": "Compound = chemically united; Mixture = not chemically united", "choices": ["A compound is a chemical union of different molecules while a mixture contains different molecules of different elements, but not chemically united", "A compound is physically mixed while a mixture is chemically united", "A compound can be separated by filtering while a mixture must be separated chemically"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the category of a substance that has indefinite shape, indefinite volume, and definite mass?", "a": "Gas", "formula": "Gas = indefinite shape + indefinite volume + definite mass", "choices": ["Gas", "Liquid", "Vapour-solid mixture"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following would be an example of a physical change?", "a": "Lead melting", "formula": "Physical change = change in state or form, not a new substance", "choices": ["Lead melting", "Steel rusting", "Natural gas burning"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following is an example of a chemical change?", "a": "Separation of water into hydrogen and oxygen", "formula": "Chemical change = a new substance is formed", "choices": ["Separation of water into hydrogen and oxygen", "Water turning into steam", "Solder melting into a liquid"]}, {"cat": "Matter, Density & Relative Density", "q": "Mercury in a glass tube could be classified as what?", "a": "Cohesive", "formula": "Cohesion = attraction between like molecules", "choices": ["Cohesive", "Adhesive", "Capillary"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following is a correct definition of surface tension?", "a": "The molecular attraction of the molecules to each other at the surface of the liquid", "formula": "Surface tension = molecular attraction at the surface of a liquid", "choices": ["The molecular attraction of the molecules to each other at the surface of the liquid", "The attraction between a liquid and the surface of the container", "The pressure caused by a liquid pushing outward on the vessel wall"]}, {"cat": "Matter, Density & Relative Density", "q": "The flow of solder into a joint is a result of what?", "a": "Adhesion and capillary attraction", "formula": "Solder flow = adhesion + capillary attraction", "choices": ["Adhesion and capillary attraction", "Cohesion and surface compression", "Gravity and thermal expansion"]}, {"cat": "Matter, Density & Relative Density", "q": "What are the two factors that affect the state in which matter exists?", "a": "Pressure and temperature", "formula": "State of matter depends mainly on pressure and temperature", "choices": ["Pressure and temperature", "Density and volume", "Mass and surface tension"]}, {"cat": "Matter, Density & Relative Density", "q": "How does a pressure cooker reduce cooking times?", "a": "Increased pressure and increased temperature", "formula": "Higher pressure raises the boiling temperature", "choices": ["Increased pressure and increased temperature", "Increased pressure and decreased temperature", "Decreased pressure and increased boiling point"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following is a correct definition of density?", "a": "The mass per unit of volume", "formula": "Density = mass ÷ volume", "choices": ["The mass per unit of volume", "The volume per unit of mass", "The weight of a substance compared to air"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following is the densest?", "a": "Mercury", "formula": "Mercury is denser than aluminum, copper, and steel", "choices": ["Mercury", "Copper", "Steel"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following are the correct densities of water?", "a": "1000 kg/m³ or 62.4 lb/ft³", "formula": "Water density = 1000 kg/m³ = 62.4 lb/ft³", "choices": ["1000 kg/m³ or 62.4 lb/ft³", "1000 kg/m³ or 6.24 lb/ft³", "100 kg/m³ or 62.4 lb/ft³"]}, {"cat": "Matter, Density & Relative Density", "q": "Which of the following is a correct definition of relative density for liquids and solids?", "a": "The mass of a substance compared to the mass of an equal volume of water", "formula": "Relative density for liquids/solids compares equal volumes to water", "choices": ["The mass of a substance compared to the mass of an equal volume of water", "The density of a substance compared to the density of an equal mass of water", "The volume of a substance compared to the volume of an equal mass of water"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the relative density of mercury?", "a": "13.6", "formula": "Mercury RD = 13.6", "choices": ["13.6", "1.36", "10.6"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the relative density of propane gas?", "a": "1.5", "formula": "Propane gas RD = 1.5", "choices": ["1.5", "0.5", "1.0"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the relative density of water and air?", "a": "Water 1, air 1", "formula": "Water RD = 1; air RD = 1", "choices": ["Water 1, air 1", "Water 1, air 0.6", "Water 0.6, air 1"]}, {"cat": "Matter, Density & Relative Density", "q": "What is the relative density of propane gas and natural gas?", "a": "Propane 1.5, natural gas 0.6", "formula": "Propane is heavier than air; natural gas is lighter than air", "choices": ["Propane 1.5, natural gas 0.6", "Propane 0.6, natural gas 1.5", "Propane 1.0, natural gas 0.6"]}];
+let cards = [...BASE];
+let i = 0;
+let correct = 0;
+let wrong = 0;
+let answered = false;
+
+function uniqueCats(){
+  return ["All", ...Array.from(new Set(BASE.map(c => c.cat)))];
+}
+
+function setup(){
+  const cats = uniqueCats();
+  cat.innerHTML = cats.map(c => `<option>${c}</option>`).join("");
+  catList.innerHTML = cats.filter(c=>c!="All").map(c=>`<div>${c}</div>`).join("");
+  show();
+}
+
+function shuffleArray(arr){
+  for(let j=arr.length-1;j>0;j--){
+    let k=Math.floor(Math.random()*(j+1));
+    [arr[j],arr[k]]=[arr[k],arr[j]];
+  }
+}
+
+function changeCategory(){
+  let selected = cat.value;
+  cards = selected === "All" ? [...BASE] : BASE.filter(c => c.cat === selected);
+  i = 0;
+  answered = false;
+  show();
+}
+
+function setMode(){
+  answered = false;
+  show();
+}
+
+function updateScore(){
+  right.textContent = correct;
+  wrong.textContent = wrong;
+  let total = correct + wrong;
+  score.textContent = total ? Math.round(correct / total * 100) + "%" : "0%";
+}
+
+function show(){
+  if(!cards.length){
+    question.textContent = "No cards in this category.";
+    choices.innerHTML = "";
+    formula.style.display = "none";
+    studyAnswer.style.display = "none";
+    return;
+  }
+  if(i < 0) i = cards.length - 1;
+  if(i >= cards.length) i = 0;
+
+  const c = cards[i];
+  tag.textContent = c.cat;
+  question.textContent = c.q;
+  num.textContent = i + 1;
+  total.textContent = cards.length;
+  answered = false;
+
+  formula.textContent = "Formula / Rule: " + c.formula;
+  formula.style.display = "none";
+
+  const isStudy = mode.value === "study";
+  choices.style.display = isStudy ? "none" : "grid";
+  studyAnswer.style.display = isStudy ? "block" : "none";
+  studyAnswer.textContent = "Answer: " + c.a + "  |  Formula: " + c.formula;
+
+  if(!isStudy){
+    let opts = [...c.choices];
+    shuffleArray(opts);
+    choices.innerHTML = opts.map(x => `<button class="choice" onclick="pick(this, '${escapeJS(x)}')">${x}</button>`).join("");
+  }
+  updateScore();
+}
+
+function escapeJS(str){
+  return String(str).replaceAll("\\","\\\\").replaceAll("'","\\'").replaceAll("\n"," ");
+}
+
+function pick(btn, val){
+  if(answered) return;
+  answered = true;
+  const c = cards[i];
+  const buttons = [...document.querySelectorAll(".choice")];
+  buttons.forEach(b => {
+    if(b.textContent === c.a) b.classList.add("correct");
+  });
+  if(val === c.a){
+    correct++;
+    btn.classList.add("correct");
+  } else {
+    wrong++;
+    btn.classList.add("wrong");
+  }
+  formula.style.display = "block";
+  updateScore();
+}
+
+function showFormula(){
+  formula.style.display = "block";
+  if(mode.value === "study") studyAnswer.style.display = "block";
+}
+
+function nextCard(){ i++; show(); }
+function prevCard(){ i--; show(); }
+function shuffleCards(){ shuffleArray(cards); i=0; show(); }
+function resetScore(){ correct=0; wrong=0; updateScore(); }
+
+document.onkeydown = e => {
+  if(e.key === "ArrowRight") nextCard();
+  if(e.key === "ArrowLeft") prevCard();
+  if(e.key === " " || e.key === "Enter") {
+    e.preventDefault();
+    showFormula();
+  }
+};
+
+function toggleCategories(){
+  catList.classList.toggle("hide");
+  const btn = document.querySelector(".miniBtn");
+  btn.textContent = catList.classList.contains("hide") ? "Show" : "Minimize";
+}
+
+setup();
+</script>
+</body>
+</html>
