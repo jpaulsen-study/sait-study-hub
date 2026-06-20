@@ -53,7 +53,7 @@ button:hover,select:hover{background:#eee}
       <option value="study">Study Mode</option>
     </select>
     <button onclick="shuffleCards()">Shuffle</button>
-    <button onclick="resetScore()">Reset Score</button><button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button>
+    <button onclick="resetScore()">Reset Score</button><button id="audioBtn" onclick="toggleAudio()">🔇 Audio Off</button><button onclick="goHome()">🏠 Main Page</button>
   </div>
 
   <div class="scorebar">
@@ -168,6 +168,7 @@ function show(){
     choices.innerHTML = opts.map(x => `<button class="choice" onclick="pick(this, '${escapeJS(x)}')">${x}</button>`).join("");
   }
   updateScore();
+
 setTimeout(()=>speakQuestion(false),150);
 }
 
@@ -193,7 +194,6 @@ function pick(btn, val){
   formula.style.display = "block";
   speakAnswer(false);
   updateScore();
-setTimeout(()=>speakQuestion(false),150);
 }
 
 function showFormula(){
@@ -257,8 +257,13 @@ function speakQuestion(force=false){
 }
 
 function speakAnswer(force=false){
-  if(cards.length) speakText(cards[i].a,force);
+  if(cards.length){
+    const c = cards[i];
+    speakText("Answer. " + c.a + ". Formula or rule. " + c.formula, force);
+  }
 }
+
+function goHome(){window.location.href="https://jpaulsen-study.github.io/sait-study-hub/";}
 
 updateAudioUI();
 setup();
