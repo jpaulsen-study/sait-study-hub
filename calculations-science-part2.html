@@ -24,7 +24,7 @@ button,select{border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-
     <button onclick="prevCard()" class="secondary">Previous</button>
     <button onclick="nextCard()" class="secondary">Next</button>
     <button onclick="shuffleCards()">Shuffle</button>
-    <button onclick="resetScore()" class="secondary">Reset Score</button>
+    <button onclick="resetScore()" class="secondary">Reset Score</button><button onclick="goHome()" class="secondary">🏠 Main Page</button>
   </div>
   <div class="mode-note" id="modeNote">Click the card to flip it.</div>
   <div class="stats"><span id="counter"></span> | Score: <span class="score" id="score">0 / 0</span></div>
@@ -114,6 +114,7 @@ function nextCard(){index=(index+1)%deck.length;render()}
 function prevCard(){index=(index-1+deck.length)%deck.length;render()}
 function shuffleCards(){deck=filtered().sort(()=>Math.random()-.5);index=0;render()}
 function resetScore(){correct=0;attempts=0;render()}
+function goHome(){window.location.href="https://jpaulsen-study.github.io/sait-study-hub/";}
 modeEl.onchange=render; catEl.onchange=()=>{index=0;render()};
 setupCategories(); render();
 </script>
