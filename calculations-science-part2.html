@@ -135,13 +135,37 @@ function toggleAudio(){
 function speakText(t,force=false){
  if(!force && !audioOn) return;
  if(!("speechSynthesis" in window)) return;
- t=String(t).replace(/\s*\?/g," ?");
+
+ t = String(t)
+   .replace(/\s*\?/g," ?")
+   .replace(/×/g," multiply ")
+   .replace(/\bx\b/g," multiply ")
+   .replace(/÷/g," divide ")
+   .replace(/\+/g," add ")
+   .replace(/−/g," subtract ")
+   .replace(/=/g," equals ")
+   .replace(/π/g," pi ")
+   .replace(/√/g," square root ")
+   .replace(/²/g," squared ")
+   .replace(/³/g," cubed ")
+   .replace(/°/g," degrees ")
+   .replace(/%/g," percent ")
+   .replace(/\//g," divide ")
+   .replace(/\s+/g," ")
+   .trim();
+
  speechSynthesis.cancel();
- let u=new SpeechSynthesisUtterance(t);
- u.rate=.92;
- u.pitch=1;
- let v=speechSynthesis.getVoices().find(x=>x.lang && x.lang.toLowerCase().startsWith("en"));
- if(v)u.voice=v;
+
+ let u = new SpeechSynthesisUtterance(t);
+ u.rate = 0.92;
+ u.pitch = 1;
+
+ let v = speechSynthesis.getVoices().find(
+   x => x.lang && x.lang.toLowerCase().startsWith("en")
+ );
+
+ if(v) u.voice = v;
+
  speechSynthesis.speak(u);
 }
 
