@@ -607,7 +607,7 @@ function cleanSpeechText(t){
         .replace(/÷/g," divide ")
         .replace(/×|x/g," multiply ")
         .replace(/\+/g," add ")
-        .replace(/-/g," subtract ")
+        
         .replace(/_/g," blank ")
         .replace(/\s{2,}/g," ")
         .trim();
@@ -652,24 +652,97 @@ function goHome(){
 }
 
 init();
+
+/* FINAL AUDIO FIX
+   - _____ creates a real 3 second pause
+   - hyphenated words stay normal: two-bolt, pipe-to-pipe, ball-pein
+   - "-" is only spoken as "subtract" between numbers, like 10-4
+   - punctuation is not spoken as words
+*/
+function displayText(t){
+  return String(t)
+    .replace(/\s*([?:,;])/g," $1")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+function audioCleanText(t){
+  let text = String(t);
+
+  // Keep blanks as a pause marker before cleaning punctuation.
+  text = text.replace(/_{3,}/g,"|||PAUSE3|||");
+
+  // Trade abbreviations.
+  text = text
+    .replace(/\bPSIA\b/gi,"P.S.I.A")
+    .replace(/\bPSIG\b/gi,"P.S.I.G")
+    .replace(/\bPSI\b/gi,"P.S.I")
+    .replace(/\bWC\b/gi,"Water Column")
+    .replace(/\bIMP\b/gi,"Imperial")
+    .replace(/\bGAL\b/gi,"Gallon")
+    .replace(/\bNPS\b/gi,"N.P.S")
+    .replace(/\bTPI\b/gi,"T.P.I")
+    .replace(/\bOD\b/gi,"O.D")
+    .replace(/\bID\b/gi,"I.D")
+    .replace(/\bMJ\b/gi,"M.J")
+    .replace(/\bRFWN\b/gi,"R.F.W.N")
+    .replace(/\bRPM\b/gi,"R.P.M");
+
+  // Math symbols only where they make sense.
+  text = text
+    .replace(/(\d)\s*×\s*(\d)/g,"$1 multiply $2")
+    .replace(/(\d)\s*[xX]\s*(\d)/g,"$1 multiply $2")
+    .replace(/(\d)\s*÷\s*(\d)/g,"$1 divide $2")
+    .replace(/(\d)\s*\+\s*(\d)/g,"$1 add $2")
+    .replace(/(\d)\s*-\s*(\d)/g,"$1 subtract $2");
+
+  // Hyphens between words are NOT subtraction.
+  text = text.replace(/([A-Za-z])\-([A-Za-z])/g,"$1 $2");
+
+  // Remove punctuation from speech.
+  text = text
+    .replace(/[?:;,]/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+
+  return text;
+}
+
+function speakText(text){
+  if(!audioOn) return;
+  speechSynthesis.cancel();
+
+  const cleaned = audioCleanText(text);
+  const parts = cleaned.split("|||PAUSE3|||");
+
+  function speakPart(i){
+    if(i >= parts.length) return;
+    const part = parts[i].trim();
+
+    if(!part){
+      if(i < parts.length - 1){
+        setTimeout(function(){ speakPart(i + 1); }, 3000);
+      }
+      return;
+    }
+
+    const utter = new SpeechSynthesisUtterance(part);
+    utter.rate = 0.92;
+    utter.pitch = 1;
+    utter.volume = 1;
+
+    utter.onend = function(){
+      if(i < parts.length - 1){
+        setTimeout(function(){ speakPart(i + 1); }, 3000);
+      }
+    };
+
+    speechSynthesis.speak(utter);
+  }
+
+  speakPart(0);
+}
+
 </script>
 </body>
 </html>
-
-/* AUDIO UPDATE: 3 second pause for _____ */
-function pauseAwareSpeak(text){
-  speechSynthesis.cancel();
-  const parts = String(text).split(/_{3,}/);
-
-  function speakPart(i){
-    if(i>=parts.length) return;
-    const u = new SpeechSynthesisUtterance(parts[i].replace(/[?:;,]/g,' ').trim());
-    u.onend = function(){
-      if(i < parts.length-1){
-        setTimeout(function(){ speakPart(i+1); },3000);
-      }
-    };
-    speechSynthesis.speak(u);
-  }
-  speakPart(0);
-}
