@@ -29,7 +29,7 @@ function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;',
 let audioOn=localStorage.getItem('weldAudioOn')==='1';
 function updateAudioUI(){if($('audioStatus'))$('audioStatus').textContent=audioOn?'On':'Off';if($('audioBtn'))$('audioBtn').textContent=audioOn?'🔊  Audio On':'🔇  Audio Off';}
 function toggleAudio(){audioOn=!audioOn;localStorage.setItem('weldAudioOn',audioOn?'1':'0');if(!audioOn&&'speechSynthesis'in window)speechSynthesis.cancel();updateAudioUI();if(audioOn)speakCurrentCard(true);}
-function speakText(t,force=false){if(!force&&!audioOn)return;if(!('speechSynthesis'in window))return;t=String(t).replace(/\\s*\\?/g,' ?').replace(/:/g,' : ').replace(/\\.\\s*/g,'. ');speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.rate=.92;u.pitch=1;u.volume=1;let vs=speechSynthesis.getVoices();let v=vs.find(x=>x.lang&&x.lang.toLowerCase().startsWith('en'));if(v)u.voice=v;speechSynthesis.speak(u);}
+function speakText(t,force=false){if(!force&&!audioOn)return;if(!('speechSynthesis'in window))return;t=String(t).replace(/\\s*\\?/g,' ?').replace(/:/g,' : ').replace(/\\.\\s*/g,'. ');speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.rate=.80;u.pitch=1;u.volume=1;let vs=speechSynthesis.getVoices();let v=vs.find(x=>x.lang&&x.lang.toLowerCase().startsWith('en'));if(v)u.voice=v;speechSynthesis.speak(u);}
 function ansLabel(c){return c.choices[c.a];}
 function speakQuestion(force=false){let c=deck[index];speakText(c.q,force);}
 function speakAnswer(force=false){let c=deck[index];speakText(ansLabel(c),force);}
