@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pipe Trades Formula Flashcards</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#111;color:#f5f5f5}
+header{background:#000;border-bottom:3px solid #444;padding:14px;text-align:center}
+h1{margin:0;font-size:25px}.sub{font-size:13px;color:#bbb;margin-top:4px}
+.wrap{max-width:1000px;margin:auto;padding:14px}
+.controls,.stats,.nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}
+select,button{font-size:16px;padding:10px;border:2px solid #888;border-radius:8px;background:#222;color:#fff;cursor:pointer}
+button:hover,select:hover{background:#333}
+.card{background:#f8f8f8;color:#111;border:4px solid #555;border-radius:18px;min-height:300px;padding:22px;box-shadow:0 6px 16px rgba(0,0,0,.45);display:flex;flex-direction:column;justify-content:space-between}
+.cat{font-size:14px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:.5px}
+.q{font-size:28px;font-weight:bold;line-height:1.25;margin:18px 0}
+.a{display:none;font-size:24px;line-height:1.35;background:#e9f2ff;border-left:7px solid #1c5d99;border-radius:8px;padding:14px;margin-top:14px}
+.show .a{display:block}
+.small{font-size:13px;color:#bbb;text-align:center}
+.pill{display:inline-block;background:#333;border:1px solid #666;border-radius:999px;padding:6px 10px;margin:4px;font-size:14px}
+textarea{width:100%;min-height:110px;border-radius:10px;padding:10px;font-size:16px;background:#fff;color:#111}
+.mode{background:#1f1f1f;border:2px solid #666;border-radius:14px;padding:12px;margin-top:12px}
+.good{background:#133d1c}.bad{background:#4a1717}
+@media(max-width:600px){.q{font-size:23px}.a{font-size:20px}.card{min-height:260px}}
+</style>
+</head>
+<body>
+<header>
+<h1>Pipe Trades Formula Flashcards</h1>
+<div class="sub">Concepts · Reference Values · Metric Conversions · Electricity · Pressure · Offsets</div>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <select id="category"></select>
+    <button onclick="shuffleCards()">Shuffle</button>
+    <button onclick="toggleAnswer()">Show / Hide Answer</button>
+    <button onclick="toggleAudio()">Audio: <span id="audioState">Off</span></button>
+  </div>
+
+  <div class="stats">
+    <div class="pill">Card: <span id="num">1</span> / <span id="total">0</span></div>
+    <div class="pill">Category: <span id="catName">All</span></div>
+    <div class="pill">Score: <span id="score">0</span></div>
+  </div>
+
+  <div id="card" class="card" onclick="toggleAnswer()">
+    <div>
+      <div class="cat" id="cardCat"></div>
+      <div class="q" id="question"></div>
+      <div class="a" id="answer"></div>
+    </div>
+    <div class="small">Tap card or press Show / Hide Answer</div>
+  </div>
+
+  <div class="nav">
+    <button onclick="prevCard()">Previous</button>
+    <button onclick="markWrong()" class="bad">Wrong</button>
+    <button onclick="markRight()" class="good">Right</button>
+    <button onclick="nextCard()">Next</button>
+  </div>
+
+  <div class="mode">
+    <strong>Scratch Pad</strong>
+    <textarea placeholder="Write calculations or notes here..."></textarea>
+  </div>
+</div>
+
+<script>
+const cards = [{"cat": "Concepts & Uses", "q": "What is 0.433 psi per foot of water used for?", "a": "Converting a height of water, called head pressure, into pressure in psi. Example: 50 ft × 0.433 = 21.65 psi."}, {"cat": "Concepts & Uses", "q": "What is 2.31 ft of water per psi used for?", "a": "Converting pressure in psi into an equivalent water height. Example: 20 psi × 2.31 = 46.2 ft of water."}, {"cat": "Concepts & Uses", "q": "What is 6.9 kPa per psi used for?", "a": "Converting pressure from psi to kPa. Example: 100 psi × 6.9 = 690 kPa."}, {"cat": "Concepts & Uses", "q": "What is 9.81 kPa per metre of water used for?", "a": "Finding pressure created by a vertical column of water in metric calculations."}, {"cat": "Concepts & Uses", "q": "What is 62.4 lb/ft³ used for?", "a": "Finding the weight of water when volume is known. Example: 10 ft³ × 62.4 = 624 lb."}, {"cat": "Concepts & Uses", "q": "What is 6.24 Imperial gallons per ft³ used for?", "a": "Converting cubic feet into Imperial gallons."}, {"cat": "Concepts & Uses", "q": "What is 7.5 U.S. gallons per ft³ used for?", "a": "Converting cubic feet into U.S. gallons."}, {"cat": "Concepts & Uses", "q": "What is 10 lb per Imperial gallon used for?", "a": "Finding the weight of water when volume is given in Imperial gallons."}, {"cat": "Concepts & Uses", "q": "What is 8.33 lb per U.S. gallon used for?", "a": "Finding the weight of water when volume is given in U.S. gallons."}, {"cat": "Concepts & Uses", "q": "What is 1.414 used for?", "a": "Calculating the travel of a 45° offset. Travel = Run × 1.414."}, {"cat": "Concepts & Uses", "q": "What is 0.707 used for?", "a": "Finding the run or offset when the travel is known in a 45° offset. Run = Travel × 0.707."}, {"cat": "Concepts & Uses", "q": "How would you use the Pythagorean Theorem?", "a": "To find the missing side of a right triangle. It is used for pipe offsets, layout work, rolling offsets, and blueprint calculations."}, {"cat": "Concepts & Uses", "q": "What is the 3-4-5 triangle used for?", "a": "Squaring corners and checking whether an angle is exactly 90°."}, {"cat": "Concepts & Uses", "q": "What is PSIA used for?", "a": "Measuring absolute pressure, including atmospheric pressure. PSIA = PSIG + 14.7."}, {"cat": "Concepts & Uses", "q": "What is PSIG used for?", "a": "Measuring pressure above atmospheric pressure. PSIG = PSIA − 14.7."}, {"cat": "Concepts & Uses", "q": "What is adhesion used to explain?", "a": "Why different materials stick together. Example: water sticking to glass."}, {"cat": "Concepts & Uses", "q": "What is cohesion used to explain?", "a": "Why molecules of the same substance stick together. Example: water droplets forming."}, {"cat": "Concepts & Uses", "q": "What is relative density used for?", "a": "Comparing the weight or density of a substance to water. Water is the reference value of 1."}, {"cat": "Concepts & Uses", "q": "What is mercury's relative density of 13.6 used for?", "a": "Pressure and vacuum calculations involving mercury columns."}, {"cat": "Concepts & Uses", "q": "What is Ohm's Law used for?", "a": "Finding voltage, current, or resistance in an electrical circuit."}, {"cat": "Concepts & Uses", "q": "When would you use V = A × Ω?", "a": "When voltage is unknown and amperage and resistance are known."}, {"cat": "Concepts & Uses", "q": "When would you use A = V ÷ Ω?", "a": "When amperage is unknown and voltage and resistance are known."}, {"cat": "Concepts & Uses", "q": "When would you use Ω = V ÷ A?", "a": "When resistance is unknown and voltage and amperage are known."}, {"cat": "Concepts & Uses", "q": "What is a series circuit formula used for?", "a": "Finding total resistance when all resistors are connected in one path. Rt = R1 + R2 + R3."}, {"cat": "Concepts & Uses", "q": "What is a parallel circuit formula used for?", "a": "Finding total resistance when resistors are connected in separate branches. Rt = 1 / (1/R1 + 1/R2 + 1/R3)."}, {"cat": "Concepts & Uses", "q": "Why would you convert a fraction to a decimal?", "a": "To make calculations easier using a calculator."}, {"cat": "Concepts & Uses", "q": "Why would you convert a decimal to a fraction?", "a": "To express a measurement in the format required by drawings, blueprints, or fabrication layouts."}, {"cat": "Concepts & Uses", "q": "Why should fractions always be reduced?", "a": "To express the answer in its simplest form."}, {"cat": "Final Math Add-ons", "q": "Why do you subtract two wall thicknesses when finding the inside diameter of pipe?", "a": "Because pipe wall thickness exists on both sides of the pipe. Inside Diameter = OD − (2 × Wall Thickness)."}, {"cat": "Final Math Add-ons", "q": "When would you use GST calculations?", "a": "When finding the final selling price or invoice amount after tax is added."}, {"cat": "Final Math Add-ons", "q": "When would you use the cylinder volume formula?", "a": "To find the capacity of cylindrical tanks, vessels, and pipe sections."}, {"cat": "Final Math Add-ons", "q": "Why would you convert m³ to cm³?", "a": "To express a volume in a smaller unit when greater precision or matching units are required."}, {"cat": "Final Math Add-ons", "q": "What is density used for?", "a": "Determining how much mass or weight exists within a given volume. Density = Mass ÷ Volume."}, {"cat": "Final Math Add-ons", "q": "Why is relative density useful?", "a": "It compares how heavy one substance is relative to water."}, {"cat": "Final Math Add-ons", "q": "How would you use the relative density of a gas?", "a": "To determine the weight of a gas when its volume is known."}, {"cat": "Final Math Add-ons", "q": "Why would you use the pressure created by a column of mercury?", "a": "For vacuum measurements and barometric pressure calculations."}, {"cat": "Final Math Add-ons", "q": "What is the maximum height a perfect vacuum can lift water?", "a": "Approximately 33.9 ft or 10.3 m."}, {"cat": "Final Math Add-ons", "q": "Why doesn't pipe diameter affect pressure at a given height?", "a": "Hydrostatic pressure depends only on the height of the liquid column, not the pipe diameter."}, {"cat": "Final Math Add-ons", "q": "What is voltage most similar to in a piping system?", "a": "Pressure. Voltage pushes electrons like pressure pushes fluid."}, {"cat": "Final Math Add-ons", "q": "What happens when an electrical switch is open?", "a": "Current flow stops because the circuit path is broken."}, {"cat": "Final Math Add-ons", "q": "What is cathodic protection used for?", "a": "Preventing corrosion of underground piping systems."}, {"cat": "Final Math Add-ons", "q": "What is electrical current?", "a": "The flow of electrons through a conductor. It is measured in amperes, or amps."}, {"cat": "Final Math Add-ons", "q": "What is resistance most similar to in a piping system?", "a": "Friction loss. Both oppose flow."}, {"cat": "Final Math Add-ons", "q": "What is special about a true 45° offset?", "a": "The run and offset are equal."}, {"cat": "Final Math Add-ons", "q": "When would you use a hemispherical tank volume formula?", "a": "When calculating the capacity or contents of tanks with rounded ends."}, {"cat": "Final Math Add-ons", "q": "Why convert cubic feet to gallons when solving tank problems?", "a": "Because pump capacities are often given in gallons per minute."}, {"cat": "Final Math Add-ons", "q": "Why convert minutes into hours, minutes, and seconds?", "a": "To express equipment run time in a practical format."}, {"cat": "Metric Conversions", "q": "How do you convert metres into millimetres?", "a": "Multiply by 1000. Example: 2.5 m × 1000 = 2500 mm."}, {"cat": "Metric Conversions", "q": "How do you convert millimetres into metres?", "a": "Divide by 1000. Example: 2500 mm ÷ 1000 = 2.5 m."}, {"cat": "Metric Conversions", "q": "How do you convert metres into centimetres?", "a": "Multiply by 100. Example: 3 m × 100 = 300 cm."}, {"cat": "Metric Conversions", "q": "How do you convert centimetres into metres?", "a": "Divide by 100. Example: 300 cm ÷ 100 = 3 m."}, {"cat": "Metric Conversions", "q": "How do you convert metres into decimetres?", "a": "Multiply by 10. Example: 4 m × 10 = 40 dm."}, {"cat": "Metric Conversions", "q": "How do you convert decimetres into metres?", "a": "Divide by 10. Example: 40 dm ÷ 10 = 4 m."}, {"cat": "Reference Values", "q": "What is 1 inch water column equal to?", "a": "1 inch WC = 0.0361 psi."}, {"cat": "Reference Values", "q": "What is 1 foot of water equal to in psi?", "a": "1 ft of water = 0.433 psi."}, {"cat": "Reference Values", "q": "What is 1 psi equal to in feet of water?", "a": "1 psi = 2.31 ft of water."}, {"cat": "Reference Values", "q": "What is 1 psi equal to in kPa?", "a": "1 psi = 6.9 kPa."}, {"cat": "Reference Values", "q": "What is 1 metre of water equal to in kPa?", "a": "1 m of water = 9.81 kPa."}, {"cat": "Reference Values", "q": "What is the relative density of water?", "a": "Water has a relative density of 1."}, {"cat": "Reference Values", "q": "What is the relative density of mercury?", "a": "Mercury is 13.6 times heavier than water."}, {"cat": "Reference Values", "q": "What does 1 ft³ of water weigh?", "a": "1 ft³ of water weighs 62.4 lb."}, {"cat": "Reference Values", "q": "How many Imperial gallons are in 1 ft³?", "a": "1 ft³ = 6.24 Imperial gallons."}, {"cat": "Reference Values", "q": "How many U.S. gallons are in 1 ft³?", "a": "1 ft³ = 7.5 U.S. gallons."}, {"cat": "Reference Values", "q": "What does 1 Imperial gallon of water weigh?", "a": "1 Imperial gallon of water weighs 10 lb."}, {"cat": "Reference Values", "q": "What does 1 U.S. gallon of water weigh?", "a": "1 U.S. gallon of water weighs 8.33 lb."}, {"cat": "Reference Values", "q": "What is standard atmospheric pressure in psi?", "a": "Atmospheric pressure is approximately 14.7 psi."}, {"cat": "Reference Values", "q": "What is the 45° offset multiplier?", "a": "1.414. Use it to find travel from run or offset."}, {"cat": "Reference Values", "q": "What is the 45° reverse multiplier?", "a": "0.707. Use it to find run or offset from travel."}, {"cat": "Reference Values", "q": "What is the Pythagorean Theorem?", "a": "a² + b² = c². It is used to solve right-triangle problems."}, {"cat": "Reference Values", "q": "What is the 3-4-5 triangle?", "a": "A right triangle used to check square. 3² + 4² = 5²."}];
+
+let deck = [...cards];
+let index = 0;
+let score = 0;
+let audioOn = false;
+
+function cleanForSpeech(txt){
+  return txt
+    .replace(/PSIA/g,"P.S.I.A")
+    .replace(/PSIG/g,"P.S.I.G")
+    .replace(/psi/g,"P.S.I")
+    .replace(/kPa/g,"K.P.A")
+    .replace(/ft³/g,"cubic feet")
+    .replace(/m³/g,"cubic metres")
+    .replace(/cm³/g,"cubic centimetres")
+    .replace(/WC/g,"water column")
+    .replace(/Ω/g,"ohms")
+    .replace(/×/g," multiplied by ")
+    .replace(/÷/g," divided by ")
+    .replace(/−/g," minus ")
+    .replace(/\+/g," plus ")
+    .replace(/=/g," equals ");
+}
+
+function speak(txt){
+  if(!audioOn || !("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(cleanForSpeech(txt));
+  u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+
+function setupCategories(){
+  const cats = ["All", ...new Set(cards.map(c=>c.cat))];
+  const sel = document.getElementById("category");
+  sel.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+  sel.onchange = () => {
+    const val = sel.value;
+    deck = val === "All" ? [...cards] : cards.filter(c=>c.cat===val);
+    index = 0;
+    score = 0;
+    showCard();
+  };
+}
+
+function showCard(){
+  if(deck.length === 0) return;
+  const c = deck[index];
+  document.getElementById("card").classList.remove("show");
+  document.getElementById("cardCat").textContent = c.cat;
+  document.getElementById("question").textContent = c.q;
+  document.getElementById("answer").textContent = c.a;
+  document.getElementById("num").textContent = index + 1;
+  document.getElementById("total").textContent = deck.length;
+  document.getElementById("catName").textContent = document.getElementById("category").value;
+  document.getElementById("score").textContent = score;
+  speak(c.q);
+}
+
+function toggleAnswer(){
+  const card = document.getElementById("card");
+  card.classList.toggle("show");
+  if(card.classList.contains("show")) speak(deck[index].a);
+}
+
+function nextCard(){
+  index = (index + 1) % deck.length;
+  showCard();
+}
+
+function prevCard(){
+  index = (index - 1 + deck.length) % deck.length;
+  showCard();
+}
+
+function shuffleCards(){
+  for(let i=deck.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [deck[i],deck[j]]=[deck[j],deck[i]];
+  }
+  index = 0;
+  showCard();
+}
+
+function markRight(){
+  score++;
+  nextCard();
+}
+
+function markWrong(){
+  score--;
+  nextCard();
+}
+
+function toggleAudio(){
+  audioOn = !audioOn;
+  document.getElementById("audioState").textContent = audioOn ? "On" : "Off";
+  if(audioOn) speak(deck[index].q);
+  else if("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight") nextCard();
+  if(e.key==="ArrowLeft") prevCard();
+  if(e.key===" ") { e.preventDefault(); toggleAnswer(); }
+});
+
+setupCategories();
+showCard();
+</script>
+</body>
+</html>
