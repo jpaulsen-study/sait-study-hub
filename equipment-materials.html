@@ -84,6 +84,7 @@ button:hover{background:#eee}
 <button onclick="prevCard()">Previous</button>
 <button onclick="nextCard()">Next</button>
 <button onclick="showAnswer()">Show Answer</button>
+<button id="autoStudyBtn" onclick="toggleAutoStudy()">⏱️ Auto Study Off</button>
 <button id="audioBtn" onclick="toggleAudio()">🔇  Audio Off</button>
 <button onclick="speakCurrentCard(true)">🔊 Read Again</button>
 <button onclick="goHome()">🏠 Main Page</button>
@@ -451,6 +452,7 @@ const $=id=>document.getElementById(id);
 
 function init(){
     updateAudioUI();
+    updateAutoStudyUI();
     let modules=["All Modules",...new Set(ALL_CARDS.map(c=>c.module))];
     $("moduleFilter").innerHTML=modules.map(m=>`<option>${m}</option>`).join("");
     $("moduleFilter").onchange=filterDeck;
@@ -485,6 +487,7 @@ function render(){
     buildChoices(c);
     updateStats();
     setTimeout(()=>speakQuestion(false),250);
+    scheduleAutoStudy();
 }
 
 function buildChoices(c){
@@ -563,6 +566,42 @@ function updateStats(){
 
 function esc(s){
     return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+let autoStudyOn=localStorage.getItem("equipAutoStudyOn")==="1";
+let autoStudyTimers=[];
+
+function clearAutoStudyTimers(){
+    autoStudyTimers.forEach(t=>clearTimeout(t));
+    autoStudyTimers=[];
+}
+
+function updateAutoStudyUI(){
+    if($("autoStudyBtn"))$("autoStudyBtn").textContent=autoStudyOn?"⏱️ Auto Study On":"⏱️ Auto Study Off";
+}
+
+function toggleAutoStudy(){
+    autoStudyOn=!autoStudyOn;
+    localStorage.setItem("equipAutoStudyOn",autoStudyOn?"1":"0");
+    updateAutoStudyUI();
+    render();
+}
+
+function scheduleAutoStudy(){
+    clearAutoStudyTimers();
+    updateAutoStudyUI();
+    if(!autoStudyOn || $("mode").value!=="study" || !deck.length)return;
+
+    autoStudyTimers.push(setTimeout(()=>{
+        if(autoStudyOn && $("mode").value==="study"){
+            $("flipCard").classList.add("flipped");
+            speakAnswer(false);
+        }
+    },5000));
+
+    autoStudyTimers.push(setTimeout(()=>{
+        if(autoStudyOn && $("mode").value==="study")nextCard();
+    },10000));
 }
 
 let audioOn=localStorage.getItem("equipAudioOn")==="1";
