@@ -84,8 +84,8 @@ button:hover{background:#eee}
 <button onclick="prevCard()">Previous</button>
 <button onclick="nextCard()">Next</button>
 <button onclick="showAnswer()">Show Answer</button>
-<button id="autoStudyBtn" onclick="toggleAutoStudy()">⏱️ Auto Study Off</button>
 <button id="audioBtn" onclick="toggleAudio()">🔇  Audio Off</button>
+<button id="autoStudyBtn" onclick="toggleAutoStudy()">⏱️ Auto Study Off</button>
 <button onclick="speakCurrentCard(true)">🔊 Read Again</button>
 <button onclick="goHome()">🏠 Main Page</button>
 </div>
@@ -448,6 +448,9 @@ function makeSmartChoices(card, idx){
 const ALL_CARDS = RAW_CARDS.map(makeSmartChoices);
 
 let deck=[...ALL_CARDS],index=0,correct=0,answered={};
+let autoStudy=localStorage.getItem("equipAutoStudy")==="1";
+let flipTimer=null;
+let nextTimer=null;
 const $=id=>document.getElementById(id);
 
 function init(){
@@ -456,7 +459,10 @@ function init(){
     let modules=["All Modules",...new Set(ALL_CARDS.map(c=>c.module))];
     $("moduleFilter").innerHTML=modules.map(m=>`<option>${m}</option>`).join("");
     $("moduleFilter").onchange=filterDeck;
-    $("mode").onchange=render;
+    $("mode").onchange=function(){
+        stopAutoStudyTimers();
+        render();
+    };
     render();
 }
 
@@ -468,8 +474,15 @@ function filterDeck(){
     render();
 }
 
+function addEndPunctuation(t){
+    t=String(t).trim();
+    if(!t)return t;
+    return /[?!.]$/.test(t)?t:t+".";
+}
+
 function render(){
     if(!deck.length)return;
+    stopAutoStudyTimers();
     let c=deck[index], study=$("mode").value==="study";
     $("moduleName").textContent=c.module;
     $("counter").textContent=`Question ${index+1} of ${deck.length}`;
@@ -481,13 +494,16 @@ function render(){
     $("studyArea").style.display=study?"block":"none";
     $("flipCard").classList.remove("flipped");
     let imgHtml=c.img?'<img class="qimg" src="'+c.img+'" alt="Question image">':'';
-    $("studyQ").innerHTML=esc(c.q)+imgHtml;
-    $("studyA").textContent=c.choices[c.a];
-    $("question").innerHTML=esc(c.q)+imgHtml;
+    $("studyQ").innerHTML=esc(addEndPunctuation(c.q))+imgHtml;
+    $("studyA").textContent=addEndPunctuation(c.choices[c.a]);
+    $("question").innerHTML=esc(addEndPunctuation(c.q))+imgHtml;
     buildChoices(c);
     updateStats();
-    setTimeout(()=>speakQuestion(false),250);
-    scheduleAutoStudy();
+    if(study && autoStudy){
+        startAutoStudy();
+    }else{
+        speakQuestion(false);
+    }
 }
 
 function buildChoices(c){
@@ -496,7 +512,7 @@ function buildChoices(c){
     c.choices.forEach((ch,i)=>{
         let b=document.createElement("button");
         b.className="choice";
-        b.textContent=String.fromCharCode(97+i)+") "+ch;
+        b.textContent=String.fromCharCode(97+i)+") "+addEndPunctuation(ch);
         b.onclick=()=>choose(i);
         h.appendChild(b);
     });
@@ -527,17 +543,61 @@ function markChoices(chosen){
 function showAnswer(){
     let c=deck[index];
     if($("mode").value==="study"){
+        clearTimeout(flipTimer);
         $("flipCard").classList.add("flipped");
         speakAnswer(false);
         return;
     }
-    $("answerBox").innerHTML="<b>Correct Answer:</b> "+String.fromCharCode(97+c.a)+") "+esc(c.choices[c.a]);
+    $("answerBox").innerHTML="<b>Correct Answer:</b> "+String.fromCharCode(97+c.a)+") "+esc(addEndPunctuation(c.choices[c.a]));
     $("answerBox").style.display="block";
 }
 
 function flipStudyCard(){
+    stopAutoStudyTimers();
     $("flipCard").classList.toggle("flipped");
-    setTimeout(()=>speakCurrentCard(false),100);
+    speakCurrentCard(false);
+}
+
+function updateAutoStudyUI(){
+    if($("autoStudyBtn")) $("autoStudyBtn").textContent=autoStudy?"⏱️ Auto Study On":"⏱️ Auto Study Off";
+}
+
+function stopAutoStudyTimers(){
+    clearTimeout(flipTimer);
+    clearTimeout(nextTimer);
+    flipTimer=null;
+    nextTimer=null;
+}
+
+function toggleAutoStudy(){
+    autoStudy=!autoStudy;
+    localStorage.setItem("equipAutoStudy",autoStudy?"1":"0");
+    updateAutoStudyUI();
+    stopAutoStudyTimers();
+    render();
+}
+
+function startAutoStudy(){
+    stopAutoStudyTimers();
+    if(!autoStudy || $("mode").value!=="study") return;
+    $("flipCard").classList.remove("flipped");
+
+    // Speech must finish first. Then the 5-second flip timer begins.
+    speakQuestion(false,()=>{
+        if(!autoStudy || $("mode").value!=="study") return;
+        flipTimer=setTimeout(()=>{
+            if(!autoStudy || $("mode").value!=="study") return;
+            $("flipCard").classList.add("flipped");
+
+            // Answer speech must finish first. Then the 10-second next-card timer begins.
+            speakAnswer(false,()=>{
+                if(!autoStudy || $("mode").value!=="study") return;
+                nextTimer=setTimeout(()=>{
+                    if(autoStudy && $("mode").value==="study") nextCard();
+                },10000);
+            });
+        },5000);
+    });
 }
 
 function nextCard(){index=(index+1)%deck.length;render();}
@@ -568,42 +628,6 @@ function esc(s){
     return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
 
-let autoStudyOn=localStorage.getItem("equipAutoStudyOn")==="1";
-let autoStudyTimers=[];
-
-function clearAutoStudyTimers(){
-    autoStudyTimers.forEach(t=>clearTimeout(t));
-    autoStudyTimers=[];
-}
-
-function updateAutoStudyUI(){
-    if($("autoStudyBtn"))$("autoStudyBtn").textContent=autoStudyOn?"⏱️ Auto Study On":"⏱️ Auto Study Off";
-}
-
-function toggleAutoStudy(){
-    autoStudyOn=!autoStudyOn;
-    localStorage.setItem("equipAutoStudyOn",autoStudyOn?"1":"0");
-    updateAutoStudyUI();
-    render();
-}
-
-function scheduleAutoStudy(){
-    clearAutoStudyTimers();
-    updateAutoStudyUI();
-    if(!autoStudyOn || $("mode").value!=="study" || !deck.length)return;
-
-    autoStudyTimers.push(setTimeout(()=>{
-        if(autoStudyOn && $("mode").value==="study"){
-            $("flipCard").classList.add("flipped");
-            speakAnswer(false);
-        }
-    },5000));
-
-    autoStudyTimers.push(setTimeout(()=>{
-        if(autoStudyOn && $("mode").value==="study")nextCard();
-    },10000));
-}
-
 let audioOn=localStorage.getItem("equipAudioOn")==="1";
 
 function updateAudioUI(){
@@ -619,61 +643,77 @@ function toggleAudio(){
     if(audioOn)speakCurrentCard(true);
 }
 
-function cleanSpeechText(t){
-    return String(t)
-        .replace(/\s+\?/g," ?")
-        .replace(/\s+\./g,".")
-        .replace(/\s+,/g,",")
-        .replace(/PSIA/gi,"P.S.I.A")
-        .replace(/PSIG/gi,"P.S.I.G")
+function audioCleanText(t){
+    let text=String(t);
+    text=text.replace(/_{3,}/g,"|||PAUSE3|||");
+    text=text
+        .replace(/\bPSIA\b/gi,"P.S.I.A")
+        .replace(/\bPSIG\b/gi,"P.S.I.G")
         .replace(/\bPSI\b/gi,"P.S.I")
+        .replace(/\bWC\b/gi,"Water Column")
+        .replace(/\bIMP\b/gi,"Imperial")
+        .replace(/\bGAL\b/gi,"Gallon")
         .replace(/\bNPS\b/gi,"N.P.S")
         .replace(/\bTPI\b/gi,"T.P.I")
-        .replace(/\bOD\b/g,"O.D")
-        .replace(/\bID\b/g,"I.D")
-        .replace(/\bMJ\b/g,"M.J")
-        .replace(/\bRFWN\b/g,"R.F.W.N")
-        .replace(/\bPTFE\b/g,"P.T.F.E")
-        .replace(/\bRPM\b/g,"R.P.M")
-        .replace(/\bmm\b/gi,"millimetres")
-        .replace(/\bcm\b/gi,"centimetres")
-        .replace(/\bm\b/g,"metres")
-        .replace(/\bft\b/gi,"feet")
-        .replace(/\bin\b/gi,"inches")
-        .replace(/\bgal\b/gi,"gallon")
-        .replace(/\bImp\b/g,"imperial")
-        .replace(/\bwc\b/gi,"water column")
-        .replace(/÷/g," divide ")
-        .replace(/×|x/g," multiply ")
-        .replace(/\+/g," add ")
-        
-        .replace(/_/g," blank ")
-        .replace(/\s{2,}/g," ")
+        .replace(/\bOD\b/gi,"O.D")
+        .replace(/\bID\b/gi,"I.D")
+        .replace(/\bMJ\b/gi,"M.J")
+        .replace(/\bRFWN\b/gi,"R.F.W.N")
+        .replace(/\bRPM\b/gi,"R.P.M");
+    text=text
+        .replace(/(\d)\s*×\s*(\d)/g,"$1 multiply $2")
+        .replace(/(\d)\s*[xX]\s*(\d)/g,"$1 multiply $2")
+        .replace(/(\d)\s*÷\s*(\d)/g,"$1 divide $2")
+        .replace(/(\d)\s*\+\s*(\d)/g,"$1 add $2")
+        .replace(/(\d)\s*-\s*(\d)/g,"$1 subtract $2");
+    text=text.replace(/([A-Za-z])-([A-Za-z])/g,"$1 $2");
+    text=text
+        .replace(/[.!?:;,]/g," ")
+        .replace(/\s+/g," ")
         .trim();
+    return text;
 }
 
-function speakText(t,force=false){
-    if(!force&&!audioOn)return;
-    if(!("speechSynthesis" in window))return;
-    t=cleanSpeechText(t);
+function speakText(text,force=false,onDone=null){
+    if(!force&&!audioOn){ if(onDone) onDone(); return; }
+    if(!("speechSynthesis" in window)){ if(onDone) onDone(); return; }
     speechSynthesis.cancel();
-    let u=new SpeechSynthesisUtterance(t);
-    u.rate=.92;
-    u.pitch=1;
-    u.volume=1;
-    let vs=speechSynthesis.getVoices();
-    let v=vs.find(x=>x.lang&&x.lang.toLowerCase().startsWith("en"));
-    if(v)u.voice=v;
-    speechSynthesis.speak(u);
+    const cleaned=audioCleanText(text);
+    const parts=cleaned.split("|||PAUSE3|||");
+
+    function finish(){ if(onDone) onDone(); }
+    function speakPart(i){
+        if(i>=parts.length){ finish(); return; }
+        const part=parts[i].trim();
+        if(!part){
+            if(i<parts.length-1) setTimeout(()=>speakPart(i+1),3000);
+            else finish();
+            return;
+        }
+        const utter=new SpeechSynthesisUtterance(part);
+        utter.rate=.85;
+        utter.pitch=1;
+        utter.volume=1;
+        let vs=speechSynthesis.getVoices();
+        let v=vs.find(x=>x.lang&&x.lang.toLowerCase().startsWith("en"));
+        if(v)utter.voice=v;
+        utter.onend=()=>{
+            if(i<parts.length-1) setTimeout(()=>speakPart(i+1),3000);
+            else finish();
+        };
+        utter.onerror=finish;
+        speechSynthesis.speak(utter);
+    }
+    speakPart(0);
 }
 
 function ansLabel(c){return c.choices[c.a];}
-function speakQuestion(force=false){let c=deck[index];speakText(c.q,force);}
-function speakAnswer(force=false){let c=deck[index];speakText(ansLabel(c),force);}
+function speakQuestion(force=false,onDone=null){let c=deck[index];speakText(addEndPunctuation(c.q),force,onDone);}
+function speakAnswer(force=false,onDone=null){let c=deck[index];speakText(addEndPunctuation(ansLabel(c)),force,onDone);}
 function speakResult(chosen,force=false){
     let c=deck[index];
     let t=chosen===c.a?"Correct. ":"Incorrect. The correct answer is. ";
-    speakText(t+ansLabel(c),force);
+    speakText(t+addEndPunctuation(ansLabel(c)),force);
 }
 function speakCurrentCard(force=false){
     if($("mode").value==="study"&&$("flipCard").classList.contains("flipped"))speakAnswer(force);
@@ -691,96 +731,6 @@ function goHome(){
 }
 
 init();
-
-/* FINAL AUDIO FIX
-   - _____ creates a real 3 second pause
-   - hyphenated words stay normal: two-bolt, pipe-to-pipe, ball-pein
-   - "-" is only spoken as "subtract" between numbers, like 10-4
-   - punctuation is not spoken as words
-*/
-function displayText(t){
-  return String(t)
-    .replace(/\s*([?:,;])/g," $1")
-    .replace(/\s+/g," ")
-    .trim();
-}
-
-function audioCleanText(t){
-  let text = String(t);
-
-  // Keep blanks as a pause marker before cleaning punctuation.
-  text = text.replace(/_{3,}/g,"|||PAUSE3|||");
-
-  // Trade abbreviations.
-  text = text
-    .replace(/\bPSIA\b/gi,"P.S.I.A")
-    .replace(/\bPSIG\b/gi,"P.S.I.G")
-    .replace(/\bPSI\b/gi,"P.S.I")
-    .replace(/\bWC\b/gi,"Water Column")
-    .replace(/\bIMP\b/gi,"Imperial")
-    .replace(/\bGAL\b/gi,"Gallon")
-    .replace(/\bNPS\b/gi,"N.P.S")
-    .replace(/\bTPI\b/gi,"T.P.I")
-    .replace(/\bOD\b/gi,"O.D")
-    .replace(/\bID\b/gi,"I.D")
-    .replace(/\bMJ\b/gi,"M.J")
-    .replace(/\bRFWN\b/gi,"R.F.W.N")
-    .replace(/\bRPM\b/gi,"R.P.M");
-
-  // Math symbols only where they make sense.
-  text = text
-    .replace(/(\d)\s*×\s*(\d)/g,"$1 multiply $2")
-    .replace(/(\d)\s*[xX]\s*(\d)/g,"$1 multiply $2")
-    .replace(/(\d)\s*÷\s*(\d)/g,"$1 divide $2")
-    .replace(/(\d)\s*\+\s*(\d)/g,"$1 add $2")
-    .replace(/(\d)\s*-\s*(\d)/g,"$1 subtract $2");
-
-  // Hyphens between words are NOT subtraction.
-  text = text.replace(/([A-Za-z])\-([A-Za-z])/g,"$1 $2");
-
-  // Remove punctuation from speech.
-  text = text
-    .replace(/[?:;,]/g," ")
-    .replace(/\s+/g," ")
-    .trim();
-
-  return text;
-}
-
-function speakText(text){
-  if(!audioOn) return;
-  speechSynthesis.cancel();
-
-  const cleaned = audioCleanText(text);
-  const parts = cleaned.split("|||PAUSE3|||");
-
-  function speakPart(i){
-    if(i >= parts.length) return;
-    const part = parts[i].trim();
-
-    if(!part){
-      if(i < parts.length - 1){
-        setTimeout(function(){ speakPart(i + 1); }, 3000);
-      }
-      return;
-    }
-
-    const utter = new SpeechSynthesisUtterance(part);
-    utter.rate = 0.80;
-    utter.pitch = 1;
-    utter.volume = 1;
-
-    utter.onend = function(){
-      if(i < parts.length - 1){
-        setTimeout(function(){ speakPart(i + 1); }, 3000);
-      }
-    };
-
-    speechSynthesis.speak(utter);
-  }
-
-  speakPart(0);
-}
 
 </script>
 </body>
