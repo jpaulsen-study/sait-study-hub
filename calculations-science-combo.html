@@ -103,8 +103,8 @@ function resetTimers(){ clearTimeout(flipTimer); clearTimeout(nextTimer); flipTi
 function scheduleAutoStudy(){ resetTimers(); if(!autoStudy || modeEl.value!=='study') return; flipTimer=setTimeout(()=>{flipCard(true);},5000); nextTimer=setTimeout(()=>{nextCard();},10000); }
 function toggleAudio(){ autoRead=!autoRead; localStorage.setItem('combinedAutoRead',autoRead?'1':'0'); if(!autoRead && 'speechSynthesis' in window) speechSynthesis.cancel(); updateUI(); if(autoRead) speakCurrent(true); }
 function cleanForSpeech(t){ return String(t)
- .replace(/PSIA/g,'P.S.I.A').replace(/PSIG/g,'P.S.I.G').replace(/psi/gi,'P.S.I').replace(/kPa/g,'kilo pascals')
- .replace(/WC/g,'water column').replace(/Imp/g,'Imperial').replace(/gal/g,'gallon').replace(/ft³/g,'cubic feet').replace(/m³/g,'cubic metres')
+ .replace(/PSIA/g,'P.S.I.A').replace(/PSIG/g,'P.S.I.G').replace(/\bpsi\b/gi,'P.S.I').replace(/\bkPa\b/g,'kilo pascals')
+ .replace(/\bWC\b/g,'water column').replace(/\bImp\b/g,'Imperial').replace(/\bgal\b/g,'gallon').replace(/ft³/g,'cubic feet').replace(/m³/g,'cubic metres')
  .replace(/cm³/g,'cubic centimetres').replace(/mm²/g,'square millimetres').replace(/ft²/g,'square feet').replace(/in²/g,'square inches')
  .replace(/×/g,' multiply ').replace(/÷/g,' divide ').replace(/\+/g,' add ').replace(/−|-/g,' subtract ').replace(/=/g,' equals ')
  .replace(/π/g,' pi ').replace(/√/g,' square root ').replace(/Ω/g,' ohms ').replace(/°/g,' degrees ').replace(/_/g,' pause ').replace(/\s+/g,' ').trim(); }
@@ -114,7 +114,7 @@ function updateButtons(){ const quiz=modeEl.value==='quiz'; document.getElementB
 function updateUI(){ document.getElementById('audioStatus').textContent=autoRead?'On':'Off'; document.getElementById('audioBtn').textContent=autoRead?'🔊 Auto Read On':'🔇 Auto Read Off'; document.getElementById('autoStatus').textContent=autoStudy?'On':'Off'; const b=document.getElementById('autoStudyBtn'); b.textContent=autoStudy?'⏱ Auto Study On':'⏱ Auto Study Off'; b.classList.toggle('timerOn',autoStudy); }
 function goHome(){ window.location.href='https://jpaulsen-study.github.io/sait-study-hub/'; }
 document.addEventListener('keydown',e=>{ if(e.key==='ArrowRight')nextCard(); if(e.key==='ArrowLeft')prevCard(); if(e.key===' '||e.key==='Enter'){e.preventDefault(); flipCard();} });
-window.speechSynthesis && speechSynthesis.onvoiceschanged=()=>{};
+if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = function(){}; }
 setupCategories(); render();
 </script>
 </body>
