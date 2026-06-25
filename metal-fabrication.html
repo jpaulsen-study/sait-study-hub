@@ -19,7 +19,7 @@ function buildChoices(c){let h=$('choices');h.innerHTML='';c.choices.forEach((ch
 function choose(i){if($('mode').value==='study')return flipStudyCard();if(answered[index]!==undefined)return;answered[index]=i;if(i===deck[index].a)correct++;markChoices(i);showAnswer(true);speakResult(i,false);updateStats();}
 function markChoices(chosen){let c=deck[index],bs=document.querySelectorAll('.choice');bs.forEach((b,i)=>{b.disabled=true;if(i===c.a)b.classList.add('correct');if(i===chosen&&i!==c.a)b.classList.add('wrong');});$('feedback').textContent=chosen===c.a?'Correct':'Incorrect';}
 function showAnswer(){let c=deck[index];if($('mode').value==='study'){$('flipCard').classList.add('flipped');return;}$('answerBox').innerHTML='<b>Correct Answer:</b> '+String.fromCharCode(97+c.a)+') '+esc(c.choices[c.a]);$('answerBox').style.display='block';}
-function flipStudyCard(){$('flipCard').classList.toggle('flipped');setTimeout(()=>speakCurrentCard(false),100);}
+function flipStudyCard(){$('flipCard').classList.toggle('flipped');setTimeout(()=>speakCurrentCard(false),1000);}
 function nextCard(){index=(index+1)%deck.length;render();}function prevCard(){index=(index-1+deck.length)%deck.length;render();}
 function shuffleDeck(){for(let i=deck.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}index=0;resetScore(false);render();}
 function resetScore(r=true){correct=0;answered={};if(r)render();updateStats();}
