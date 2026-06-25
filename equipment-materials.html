@@ -582,21 +582,21 @@ function startAutoStudy(){
     if(!autoStudy || $("mode").value!=="study") return;
     $("flipCard").classList.remove("flipped");
 
-    // Speech must finish first. Then the 5-second flip timer begins.
+    // Speech must finish first. Then the 3-second flip timer begins.
     speakQuestion(false,()=>{
         if(!autoStudy || $("mode").value!=="study") return;
         flipTimer=setTimeout(()=>{
             if(!autoStudy || $("mode").value!=="study") return;
             $("flipCard").classList.add("flipped");
 
-            // Answer speech must finish first. Then the 10-second next-card timer begins.
+            // Answer speech must finish first. Then the 5-second next-card timer begins.
             speakAnswer(false,()=>{
                 if(!autoStudy || $("mode").value!=="study") return;
                 nextTimer=setTimeout(()=>{
                     if(autoStudy && $("mode").value==="study") nextCard();
-                },10000);
+                },5000);
             });
-        },5000);
+        },3000);
     });
 }
 
